@@ -5,6 +5,7 @@ import { coupons, couponUsages, customers, orderLineItems, orders, shippingRates
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../trpc";
 import { sendTransactional } from "../lib/email";
 import { LIMITS } from "../lib/rateLimiter";
+import { verifyPaystackPayment } from "../lib/paystack";
 
 export const ordersRouter = router({
   list: protectedProcedure
@@ -250,6 +251,7 @@ export const ordersRouter = router({
         shippingRateId: z.string().uuid().optional(),
         couponCode: z.string().optional(),
         note: z.string().optional(),
+        paystackReference: z.string().optional(),
         items: z.array(
           z.object({
             variantId: z.string().uuid(),
@@ -351,6 +353,21 @@ export const ordersRouter = router({
 
       const total = Math.max(0, subtotal - discountTotal + shippingTotal);
 
+      // 4b. Verify Paystack payment if reference provided
+      let financialStatus: "pending" | "paid" | "failed" = "pending";
+      if (input.paystackReference) {
+        const payment = await verifyPaystackPayment(input.paystackReference);
+        if (payment.status !== "success") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payment was not successful. Please try again." });
+        }
+        // Verify amount matches (Paystack amounts are in cents, total is in rands)
+        const expectedKobo = Math.round(total * 100);
+        if (Math.abs(payment.amount - expectedKobo) > 1) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payment amount mismatch. Please contact support." });
+        }
+        financialStatus = "paid";
+      }
+
       // 5. Upsert customer
       const [existingCustomer] = await ctx.db
         .select()
@@ -391,6 +408,8 @@ export const ordersRouter = router({
           total: total.toFixed(2),
           shippingAddress: input.shippingAddress,
           note: input.note,
+          financialStatus,
+          paystackReference: input.paystackReference,
           metadata: shippingRateName ? { shippingRateName } : undefined,
         })
         .returning();

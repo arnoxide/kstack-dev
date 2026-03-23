@@ -1,13 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/context/cart-context";
 import { useCustomerAuth } from "@/context/customer-auth-context";
 import { formatCurrency } from "@/lib/utils";
 import { api } from "@/lib/api";
 import Link from "next/link";
+import Script from "next/script";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle, Loader2, ShoppingBag, Tag, Truck, X } from "lucide-react";
+
+const PAYSTACK_PUBLIC_KEY = process.env["NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY"] ?? "";
+
+declare global {
+  interface Window {
+    PaystackPop: {
+      setup(opts: {
+        key: string;
+        email: string;
+        amount: number;
+        currency: string;
+        ref: string;
+        onClose(): void;
+        callback(response: { reference: string; status: string }): void;
+      }): { openIframe(): void };
+    };
+  }
+}
 
 interface ShippingRate {
   id: string;
@@ -99,6 +118,7 @@ export default function CheckoutPage() {
   // Submit
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Load shipping rates when subtotal is known
   useEffect(() => {
@@ -132,8 +152,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const placeOrder = async (paystackReference?: string) => {
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -147,6 +166,7 @@ export default function CheckoutPage() {
         shippingRateId: selectedRateId ?? undefined,
         couponCode: coupon?.code || undefined,
         note: note || undefined,
+        paystackReference,
         items: cart.items.map((item) => ({
           variantId: item.variantId,
           title: item.title,
@@ -160,9 +180,37 @@ export default function CheckoutPage() {
       router.push(`/${params.slug}/orders/${result.orderNumber}?email=${encodeURIComponent(email)}`);
     } catch (e: unknown) {
       setSubmitError((e as { message?: string }).message ?? "Failed to place order. Please try again.");
-    } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!PAYSTACK_PUBLIC_KEY || !window.PaystackPop) {
+      // No Paystack configured — COD flow
+      void placeOrder();
+      return;
+    }
+
+    // Generate unique reference
+    const ref = `kasify_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    const handler = window.PaystackPop.setup({
+      key: PAYSTACK_PUBLIC_KEY,
+      email,
+      amount: Math.round(orderTotal * 100), // Paystack expects kobo/cents
+      currency: "ZAR",
+      ref,
+      onClose() {
+        setSubmitError("Payment was cancelled. Please try again.");
+      },
+      callback(response) {
+        void placeOrder(response.reference);
+      },
+    });
+
+    handler.openIframe();
   };
 
   if (count === 0) {
@@ -182,9 +230,12 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      {PAYSTACK_PUBLIC_KEY && (
+        <Script src="https://js.paystack.co/v1/inline.js" strategy="beforeInteractive" />
+      )}
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Left — form */}
           <div className="space-y-8">
@@ -272,12 +323,19 @@ export default function CheckoutPage() {
               />
             </section>
 
-            {/* Payment — placeholder */}
+            {/* Payment */}
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment</h2>
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 text-sm text-gray-500 text-center">
-                Cash on delivery / manual payment — online payment coming soon
-              </div>
+              {PAYSTACK_PUBLIC_KEY ? (
+                <div className="border border-green-200 rounded-lg p-4 bg-green-50 text-sm text-green-800 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  Secure payment via Paystack — you&apos;ll be prompted to pay after clicking the button below.
+                </div>
+              ) : (
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 text-sm text-gray-500 text-center">
+                  Cash on delivery / manual payment
+                </div>
+              )}
             </section>
 
             {submitError && (
@@ -292,7 +350,9 @@ export default function CheckoutPage() {
               className="w-full bg-shop-accent text-shop-accent-fg py-3 rounded-shop font-medium hover:bg-shop-accent transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {submitting ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Placing order…</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
+              ) : PAYSTACK_PUBLIC_KEY ? (
+                <>Pay {formatCurrency(orderTotal)} with Paystack</>
               ) : (
                 <>Place Order — {formatCurrency(orderTotal)}</>
               )}

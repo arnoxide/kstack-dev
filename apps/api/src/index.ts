@@ -5,6 +5,10 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { createContext } from "./context";
 import { appRouter } from "./router";
+import { verifyPaystackWebhook } from "./lib/paystack";
+import { db } from "@kasify/db";
+import { orders } from "@kasify/db";
+import { eq } from "drizzle-orm";
 
 const app = new Hono();
 
@@ -28,6 +32,31 @@ app.use(
 
 // Health check
 app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
+
+// Paystack webhook — must be outside CORS, raw body needed
+app.post("/webhook/paystack", async (c) => {
+  const signature = c.req.header("x-paystack-signature") ?? "";
+  const payload = await c.req.text();
+
+  const valid = await verifyPaystackWebhook(payload, signature);
+  if (!valid) return c.json({ error: "Invalid signature" }, 401);
+
+  let event: { event: string; data: { reference: string; status: string } };
+  try {
+    event = JSON.parse(payload) as typeof event;
+  } catch {
+    return c.json({ error: "Invalid JSON" }, 400);
+  }
+
+  if (event.event === "charge.success" && event.data.status === "success") {
+    await db
+      .update(orders)
+      .set({ financialStatus: "paid", updatedAt: new Date() })
+      .where(eq(orders.paystackReference, event.data.reference));
+  }
+
+  return c.json({ received: true });
+});
 
 // tRPC handler
 app.all("/trpc/*", (c) => {
