@@ -143,7 +143,7 @@ function NewCollectionForm({ onDone, onCancel }: { onDone: (id: string) => void;
   const [error, setError] = useState("");
 
   const createMutation = trpc.collections.create.useMutation({
-    onSuccess: (col) => onDone(col.id),
+    onSuccess: (col) => { if (col) onDone(col.id); },
     onError: (e) => setError(e.message),
   });
 

@@ -495,11 +495,11 @@ export default function IntegrationsPage({
   );
 
   const handleSave = (provider: string, config: Record<string, string>) => {
-    upsert.mutate({ provider, isEnabled: true, config });
+    upsert.mutate({ provider: provider as Provider, isEnabled: true, config });
   };
 
   const handleDisable = (provider: string) => {
-    disable.mutate({ provider });
+    disable.mutate({ provider: provider as Provider });
   };
 
   const connectedCount = (integrationsList ?? []).filter((i) => i.isEnabled).length;
@@ -544,7 +544,7 @@ export default function IntegrationsPage({
               <IntegrationCard
                 key={meta.provider}
                 meta={meta}
-                existing={existingMap.get(meta.provider)}
+                existing={existingMap.get(meta.provider) ?? null}
                 onSave={handleSave}
                 onDisable={handleDisable}
               />

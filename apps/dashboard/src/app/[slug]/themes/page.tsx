@@ -59,7 +59,7 @@ export default function ThemesPage() {
 
   useEffect(() => {
     if (themes && themes.length > 0 && !selectedThemeId) {
-      const active = themes.find((t) => t.isActive) ?? themes[0];
+      const active = themes.find((t) => t.isActive) ?? themes[0]!;
       setSelectedThemeId(active.id);
       setSettings(active.settings);
     }
@@ -80,7 +80,7 @@ export default function ThemesPage() {
   });
 
   const createMutation = trpc.storefront.themes.create.useMutation({
-    onSuccess: (theme) => { refetch(); setSelectedThemeId(theme.id); },
+    onSuccess: (theme) => { refetch(); if (theme) setSelectedThemeId(theme.id); },
   });
 
   const handleSaveSettings = () => {

@@ -57,7 +57,7 @@ function CustomerPanel({ customerId, slug, onClose }: { customerId: string; slug
   const note = (data as any)?.metadata?.note ?? "";
 
   const initials = data
-    ? ([data.firstName, data.lastName].filter(Boolean).join(" ") || data.email)[0].toUpperCase()
+    ? (([data.firstName, data.lastName].filter(Boolean).join(" ") || data.email)[0] ?? "?").toUpperCase()
     : "?";
   const fullName = data
     ? [data.firstName, data.lastName].filter(Boolean).join(" ") || "—"
@@ -405,7 +405,7 @@ export default function CustomersPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Need slug for panel — read from URL
-  const slug = typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "";
+  const slug = typeof window !== "undefined" ? (window.location.pathname.split("/")[1] ?? "") : "";
 
   const totalRevenue = customers?.reduce((sum, c) => sum + Number(c.totalSpent), 0) ?? 0;
   const totalOrders = customers?.reduce((sum, c) => sum + c.totalOrders, 0) ?? 0;
@@ -475,7 +475,7 @@ export default function CustomersPage() {
                 const name = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || "—";
                 const initials = name !== "—"
                   ? name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-                  : customer.email[0].toUpperCase();
+                  : (customer.email[0] ?? "?").toUpperCase();
 
                 return (
                   <tr

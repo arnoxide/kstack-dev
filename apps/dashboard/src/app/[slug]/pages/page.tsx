@@ -693,7 +693,7 @@ export default function PagesPage() {
           title: "Home",
           slug: "home",
         });
-        id = page.id;
+        id = page!.id;
         setPageId(id);
       }
 
