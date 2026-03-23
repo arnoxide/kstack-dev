@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kasify-postgres
+    environment:
+      POSTGRES_USER: kasify
+      POSTGRES_PASSWORD: kasify
+      POSTGRES_DB: kasify
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kasify"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis is provided by the system (already running on 6379)
+  # Start with: docker compose up postgres -d
+
+volumes:
+  postgres_data:

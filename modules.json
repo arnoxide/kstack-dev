@@ -1,0 +1,282 @@
+{
+  "vendor": "Kasify",
+  "modules": [
+    {
+      "name": "Kasify_Catalog",
+      "description": "Products, variants, images, collections and inventory management",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/products.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/products/",
+        "storefront": [
+          "apps/storefront/src/app/[slug]/products/",
+          "apps/storefront/src/components/catalog.tsx",
+          "apps/storefront/src/components/product-card.tsx",
+          "apps/storefront/src/components/add-to-cart-button.tsx",
+          "apps/storefront/src/components/product-image-gallery.tsx",
+          "apps/storefront/src/components/product-variant-selector.tsx"
+        ],
+        "schema": "packages/db/src/schema/products.ts"
+      }
+    },
+    {
+      "name": "Kasify_Collections",
+      "description": "Product collections (categories) with product membership management",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/collections.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/collections/",
+        "storefront": [],
+        "schema": "packages/db/src/schema/products.ts"
+      }
+    },
+    {
+      "name": "Kasify_Orders",
+      "description": "Order creation, line items, order status and fulfilment management",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/orders.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/orders/",
+        "storefront": [
+          "apps/storefront/src/app/[slug]/checkout/",
+          "apps/storefront/src/app/[slug]/orders/"
+        ],
+        "schema": "packages/db/src/schema/orders.ts"
+      }
+    },
+    {
+      "name": "Kasify_Customers",
+      "description": "Customer accounts, profiles, order history and authentication",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/customerAuth.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/customers/",
+        "storefront": [
+          "apps/storefront/src/app/[slug]/account/",
+          "apps/storefront/src/context/customer-auth-context.tsx"
+        ],
+        "schema": "packages/db/src/schema/orders.ts"
+      }
+    },
+    {
+      "name": "Kasify_Coupons",
+      "description": "Discount codes — percentage, fixed amount, and free shipping",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/coupons.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/coupons/",
+        "storefront": [],
+        "schema": "packages/db/src/schema/coupons.ts"
+      }
+    },
+    {
+      "name": "Kasify_Shipping",
+      "description": "Shipping rates and methods (flat rate, free over amount, always free)",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/shipping.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/shipping/",
+        "storefront": [],
+        "schema": "packages/db/src/schema/shipping.ts"
+      }
+    },
+    {
+      "name": "Kasify_Reviews",
+      "description": "Product reviews submission and admin moderation",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/reviews.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/reviews/",
+        "storefront": [
+          "apps/storefront/src/components/product-reviews.tsx"
+        ],
+        "schema": "packages/db/src/schema/reviews.ts"
+      }
+    },
+    {
+      "name": "Kasify_Storefront",
+      "description": "Themes, theme settings, drag-and-drop page builder and block rendering",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/storefront.ts",
+        "dashboard": [
+          "apps/dashboard/src/app/[slug]/themes/",
+          "apps/dashboard/src/app/[slug]/pages/"
+        ],
+        "storefront": [
+          "apps/storefront/src/components/block-renderer.tsx",
+          "apps/storefront/src/app/[slug]/layout.tsx"
+        ],
+        "schema": "packages/db/src/schema/storefront.ts"
+      }
+    },
+    {
+      "name": "Kasify_Integrations",
+      "description": "Third-party service integrations (payment, analytics, marketing, etc.)",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/integrations.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/integrations/",
+        "storefront": [],
+        "schema": "packages/db/src/schema/integrations.ts"
+      }
+    },
+    {
+      "name": "Kasify_Analytics",
+      "description": "Store analytics: revenue, orders, top products and customer stats",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": null,
+        "dashboard": "apps/dashboard/src/app/[slug]/analytics/",
+        "storefront": [],
+        "schema": null
+      }
+    },
+    {
+      "name": "Kasify_Wishlist",
+      "description": "Customer wishlist stored client-side (localStorage)",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": null,
+        "dashboard": null,
+        "storefront": [
+          "apps/storefront/src/app/[slug]/wishlist/",
+          "apps/storefront/src/lib/wishlist.ts",
+          "apps/storefront/src/components/wishlist-button.tsx"
+        ],
+        "schema": null
+      }
+    },
+    {
+      "name": "Kasify_Loader",
+      "description": "Loading skeletons and spinners for dashboard and storefront route transitions",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": null,
+        "dashboard": [
+          "apps/dashboard/src/components/loader.tsx",
+          "apps/dashboard/src/app/[slug]/loading.tsx"
+        ],
+        "storefront": [
+          "apps/storefront/src/components/loader.tsx",
+          "apps/storefront/src/app/[slug]/loading.tsx",
+          "apps/storefront/src/app/[slug]/products/loading.tsx",
+          "apps/storefront/src/app/[slug]/products/[handle]/loading.tsx",
+          "apps/storefront/src/app/[slug]/checkout/loading.tsx",
+          "apps/storefront/src/app/[slug]/orders/loading.tsx",
+          "apps/storefront/src/app/[slug]/account/loading.tsx"
+        ],
+        "schema": null
+      }
+    },
+    {
+      "name": "Kasify_Email",
+      "description": "SMTP configuration, editable email templates, transactional emails (order confirmation, shipping, welcome, password reset), email logs and compose from customer panel",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/email.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/email/page.tsx",
+        "storefront": [],
+        "schema": "packages/db/src/schema/email.ts"
+      }
+    },
+    {
+      "name": "Kasify_AIAssistant",
+      "description": "AI-powered product descriptions, customer chatbot that learns from store content, and smart product recommendations",
+      "status": "active",
+      "version": "1.0.0",
+      "files": {
+        "router": "apps/api/src/routers/aiAssistant.ts",
+        "dashboard": "apps/dashboard/src/app/[slug]/ai-assistant/page.tsx",
+        "storefront": [
+          "apps/storefront/src/components/ai-chat-widget.tsx",
+          "apps/storefront/src/components/ai-recommendations.tsx"
+        ],
+        "schema": "packages/db/src/schema/aiAssistant.ts"
+      }
+    },
+    {
+      "name": "Kasify_Realtime",
+      "description": "Live inventory updates, real-time purchase notifications and cross-device cart sync via WebSockets",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_SmartCart",
+      "description": "Upsell and cross-sell suggestions, bundle recommendations and dynamic pricing rules",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_Personalization",
+      "description": "Geo-based content and pricing, behavior-based recommendations and personalized homepages",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_Marketplace",
+      "description": "Third-party plugin and app marketplace for payments, shipping providers and custom business tools",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_Headless",
+      "description": "Public REST/GraphQL API with SDKs for external storefront and multi-platform integration development",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_ShoppableMedia",
+      "description": "Clickable products in videos, interactive product showcases and social commerce integration",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_FraudDetection",
+      "description": "Risk scoring for orders, suspicious activity detection and IP/behavior tracking",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_Automation",
+      "description": "Rule-based workflows (IF→THEN), automated emails/notifications and inventory/order triggers",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_MobileAdmin",
+      "description": "Mobile merchant app with push notifications for orders and stock alerts, and on-the-go analytics",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    },
+    {
+      "name": "Kasify_IoT",
+      "description": "Smart inventory tracking, device-triggered automation and voice-controlled store management",
+      "status": "planned",
+      "version": "0.0.0",
+      "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --shop-primary: #111827;    /* Navbar / Hero background */
+    --shop-primary-fg: #ffffff; /* Text on primary background */
+    --shop-secondary: #ffffff;
+    --shop-accent: #3b82f6;     /* Buttons / Links */
+    --shop-accent-fg: #ffffff;  /* Text on accent buttons */
+    --shop-radius: 0.5rem;
+  }
+  * { box-sizing: border-box; }
+  body { @apply text-gray-900 bg-white; }
+}
+
+@layer utilities {
+  /* Primary — navbar, hero */
+  .bg-shop-primary          { background-color: var(--shop-primary); }
+  .text-shop-primary        { color: var(--shop-primary); }
+  .border-shop-primary      { border-color: var(--shop-primary); }
+  .text-shop-primary-fg     { color: var(--shop-primary-fg); }
+  .hover\:bg-shop-primary:hover { background-color: var(--shop-primary); filter: brightness(0.9); }
+
+  /* Accent — buttons, links */
+  .bg-shop-accent           { background-color: var(--shop-accent); }
+  .text-shop-accent         { color: var(--shop-accent); }
+  .border-shop-accent       { border-color: var(--shop-accent); }
+  .text-shop-accent-fg      { color: var(--shop-accent-fg); }
+  .hover\:bg-shop-accent:hover  { background-color: var(--shop-accent); filter: brightness(0.9); }
+
+  /* Shared */
+  .ring-shop-primary        { --tw-ring-color: var(--shop-primary); }
+  .ring-shop-accent         { --tw-ring-color: var(--shop-accent); }
+  .rounded-shop             { border-radius: var(--shop-radius); }
+  .focus\:ring-shop-accent:focus  { --tw-ring-color: var(--shop-accent); }
+  .focus\:ring-shop-primary:focus { --tw-ring-color: var(--shop-primary); }
+
+  /* Opacity variants */
+  .text-shop-primary-fg\/80 { color: color-mix(in srgb, var(--shop-primary-fg) 80%, transparent); }
+  .hover\:text-shop-primary-fg:hover { color: var(--shop-primary-fg); }
+  .bg-shop-primary\/80      { background-color: color-mix(in srgb, var(--shop-primary) 80%, transparent); }
+  .border-shop-accent       { border-color: var(--shop-accent); }
+}

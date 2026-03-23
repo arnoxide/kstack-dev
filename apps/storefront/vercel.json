@@ -1,0 +1,10 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @kasify/storefront build",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@kasify_api_url",
+    "NEXT_PUBLIC_STOREFRONT_URL": "@kasify_storefront_url"
+  }
+}

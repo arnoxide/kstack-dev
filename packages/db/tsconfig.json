@@ -1,0 +1,11 @@
+{
+  "extends": "@kasify/config/tsconfig",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["drizzle.config.ts", "dist"]
+}
