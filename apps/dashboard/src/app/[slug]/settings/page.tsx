@@ -15,6 +15,11 @@ import {
   Settings2,
   Puzzle,
   Lock,
+  Users,
+  Crown,
+  ShieldCheck,
+  UserMinus,
+  X,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { MODULES, getDisabledModules, saveDisabledModules } from "@/lib/modules";
@@ -127,6 +132,32 @@ export default function SettingsPage() {
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
   };
+
+  // ── Team members ─────────────────────────────────────────────────────────────
+  const { data: teamMembers, refetch: refetchTeam } = trpc.auth.listTeamMembers.useQuery();
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [memberName, setMemberName] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberPassword, setMemberPassword] = useState("");
+  const [memberRole, setMemberRole] = useState<"admin" | "staff">("staff");
+  const [memberError, setMemberError] = useState("");
+
+  const addMemberMutation = trpc.auth.addTeamMember.useMutation({
+    onSuccess: () => {
+      setShowAddMember(false);
+      setMemberName(""); setMemberEmail(""); setMemberPassword(""); setMemberError("");
+      refetchTeam();
+    },
+    onError: (err) => setMemberError(err.message),
+  });
+
+  const updateRoleMutation = trpc.auth.updateTeamMemberRole.useMutation({
+    onSuccess: () => refetchTeam(),
+  });
+
+  const removeMemberMutation = trpc.auth.removeTeamMember.useMutation({
+    onSuccess: () => refetchTeam(),
+  });
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -446,6 +477,151 @@ export default function SettingsPage() {
 
         <p className="text-xs text-gray-400">
           Changes take effect immediately. Disabling a module hides it from the sidebar but does not delete any data.
+        </p>
+      </div>
+
+      {/* ── Team members ─────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-500" />
+            <div>
+              <h2 className="font-semibold text-gray-900">Team Members</h2>
+              <p className="text-xs text-gray-500 mt-0.5">People who can access this store's dashboard</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAddMember((v) => !v)}
+            className="flex items-center gap-1.5 text-sm font-medium bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            {showAddMember ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            {showAddMember ? "Cancel" : "Add member"}
+          </button>
+        </div>
+
+        {/* Add member form */}
+        {showAddMember && (
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+            <p className="text-xs font-medium text-gray-600">New team member — they'll log in with these credentials</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Full name</label>
+                <input
+                  type="text"
+                  value={memberName}
+                  onChange={(e) => setMemberName(e.target.value)}
+                  placeholder="Jane Smith"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Email address</label>
+                <input
+                  type="email"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={memberPassword}
+                  onChange={(e) => setMemberPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={memberRole}
+                  onChange={(e) => setMemberRole(e.target.value as "admin" | "staff")}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                >
+                  <option value="staff">Staff — view & fulfil orders</option>
+                  <option value="admin">Admin — full access except billing</option>
+                </select>
+              </div>
+            </div>
+            {memberError && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-xs">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                {memberError}
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setMemberError("");
+                addMemberMutation.mutate({ name: memberName.trim(), email: memberEmail.trim(), password: memberPassword, role: memberRole });
+              }}
+              disabled={addMemberMutation.isPending || !memberName.trim() || !memberEmail.trim() || !memberPassword}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {addMemberMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Add to team
+            </button>
+          </div>
+        )}
+
+        {/* Member list */}
+        <div className="space-y-2">
+          {!teamMembers || teamMembers.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No team members yet</p>
+          ) : (
+            teamMembers.map((member) => (
+              <div key={member.muId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                {/* Avatar */}
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
+                  {(member.name[0] ?? "?").toUpperCase()}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-gray-900 truncate">{member.name}</span>
+                    {member.role === "owner" && <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" />}
+                    {member.role === "admin" && <ShieldCheck className="w-3 h-3 text-blue-500 flex-shrink-0" />}
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                </div>
+                {/* Role selector (owners can change non-owner roles) */}
+                {member.role !== "owner" ? (
+                  <select
+                    value={member.role}
+                    onChange={(e) => updateRoleMutation.mutate({ muId: member.muId, role: e.target.value as "admin" | "staff" })}
+                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-gray-900"
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                ) : (
+                  <span className="text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-100 px-2 py-1 rounded-lg">Owner</span>
+                )}
+                {/* Remove button */}
+                {member.role !== "owner" && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`Remove ${member.name} from your team?`)) {
+                        removeMemberMutation.mutate({ muId: member.muId });
+                      }
+                    }}
+                    disabled={removeMemberMutation.isPending}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Remove member"
+                  >
+                    <UserMinus className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <p className="text-xs text-gray-400">
+          <strong>Staff</strong> can view products, manage orders, and fulfil shipments.{" "}
+          <strong>Admin</strong> has full dashboard access except changing billing and removing the owner.
         </p>
       </div>
 

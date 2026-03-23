@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { hashPassword, signAccessToken, signRefreshToken, verifyPassword } from "@kasify/auth";
 import { merchantUsers, refreshTokens, tenants, users } from "@kasify/db";
@@ -232,6 +232,112 @@ export const authRouter = router({
         .update(refreshTokens)
         .set({ revokedAt: new Date() })
         .where(eq(refreshTokens.tokenHash, tokenHash));
+      return { success: true };
+    }),
+
+  // ── Team management ────────────────────────────────────────────────────────
+
+  listTeamMembers: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({
+        muId: merchantUsers.id,
+        role: merchantUsers.role,
+        createdAt: merchantUsers.createdAt,
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(merchantUsers)
+      .innerJoin(users, eq(merchantUsers.userId, users.id))
+      .where(eq(merchantUsers.tenantId, ctx.tenantId));
+    return rows;
+  }),
+
+  addTeamMember: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(6),
+        role: z.enum(["admin", "staff"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "owner" && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owners and admins can add team members" });
+      }
+
+      // Check email not already a user
+      const [existing] = await ctx.db.select().from(users).where(eq(users.email, input.email)).limit(1);
+
+      let targetUserId: string;
+
+      if (existing) {
+        // Check not already on this tenant
+        const [alreadyMember] = await ctx.db
+          .select()
+          .from(merchantUsers)
+          .where(and(eq(merchantUsers.userId, existing.id), eq(merchantUsers.tenantId, ctx.tenantId)))
+          .limit(1);
+        if (alreadyMember) {
+          throw new TRPCError({ code: "CONFLICT", message: "This person is already a team member" });
+        }
+        targetUserId = existing.id;
+      } else {
+        const passwordHash = await hashPassword(input.password);
+        const [newUser] = await ctx.db
+          .insert(users)
+          .values({ email: input.email, name: input.name, passwordHash })
+          .returning();
+        if (!newUser) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        targetUserId = newUser.id;
+      }
+
+      await ctx.db.insert(merchantUsers).values({
+        userId: targetUserId,
+        tenantId: ctx.tenantId,
+        role: input.role,
+      });
+
+      return { success: true };
+    }),
+
+  updateTeamMemberRole: protectedProcedure
+    .input(z.object({ muId: z.string().uuid(), role: z.enum(["admin", "staff"]) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "owner") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owners can change roles" });
+      }
+      await ctx.db
+        .update(merchantUsers)
+        .set({ role: input.role })
+        .where(and(eq(merchantUsers.id, input.muId), eq(merchantUsers.tenantId, ctx.tenantId)));
+      return { success: true };
+    }),
+
+  removeTeamMember: protectedProcedure
+    .input(z.object({ muId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "owner" && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only owners and admins can remove team members" });
+      }
+      // Cannot remove yourself
+      const [target] = await ctx.db
+        .select()
+        .from(merchantUsers)
+        .where(and(eq(merchantUsers.id, input.muId), eq(merchantUsers.tenantId, ctx.tenantId)))
+        .limit(1);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND" });
+      if (target.userId === ctx.user.sub) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "You cannot remove yourself" });
+      }
+      if (target.role === "owner") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the store owner" });
+      }
+      await ctx.db
+        .delete(merchantUsers)
+        .where(and(eq(merchantUsers.id, input.muId), eq(merchantUsers.tenantId, ctx.tenantId)));
       return { success: true };
     }),
 });
