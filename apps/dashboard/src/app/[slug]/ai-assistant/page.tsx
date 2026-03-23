@@ -98,11 +98,11 @@ export default function AIAssistantPage() {
   };
 
   // ── Descriptions ────────────────────────────────────────────────────────────
-  const { data: products } = trpc.products.list.useQuery();
+  const { data: products } = trpc.products.list.useQuery({});
   const generateDesc = trpc.aiAssistant.generateDescription.useMutation({
     onSuccess: () => refetchProducts(),
   });
-  const { refetch: refetchProducts } = trpc.products.list.useQuery();
+  const { refetch: refetchProducts } = trpc.products.list.useQuery({});
   const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   const handleGenerate = async (productId: string) => {
