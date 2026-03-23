@@ -21,6 +21,7 @@ import {
   Box,
   Bot,
   Mail,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthState, getAuthState } from "@/lib/auth-store";
@@ -44,6 +45,7 @@ const navItems = (slug: string) => [
   { href: `/${slug}/ai-assistant`, label: "AI Assistant", icon: Bot, module: "Kasify_AIAssistant" },
   { href: `/${slug}/email`, label: "Email", icon: Mail, module: "Kasify_Email" },
   // ── Custom modules added by scaffold CLI appear below ───────────────────────
+  { href: `/${slug}/docs`, label: "Help & Docs", icon: BookOpen, module: null },
   { href: `/${slug}/settings`, label: "Settings", icon: Settings, module: null },
 ];
 
