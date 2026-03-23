@@ -93,6 +93,141 @@ export const ordersRouter = router({
       return updated;
     }),
 
+  getDetail: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [order] = await ctx.db
+        .select()
+        .from(orders)
+        .where(and(eq(orders.id, input.id), eq(orders.tenantId, ctx.tenantId)))
+        .limit(1);
+
+      if (!order) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const lineItems = await ctx.db
+        .select()
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, order.id));
+
+      let customer = null;
+      if (order.customerId) {
+        const [row] = await ctx.db
+          .select()
+          .from(customers)
+          .where(eq(customers.id, order.customerId))
+          .limit(1);
+        customer = row ?? null;
+      }
+
+      return { ...order, lineItems, customer };
+    }),
+
+  addTracking: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        trackingNumber: z.string().min(1),
+        trackingCarrier: z.string().optional(),
+        fulfillmentNotes: z.string().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(orders)
+        .set({
+          trackingNumber: input.trackingNumber,
+          trackingCarrier: input.trackingCarrier ?? null,
+          ...(input.fulfillmentNotes !== undefined ? { fulfillmentNotes: input.fulfillmentNotes } : {}),
+          updatedAt: new Date(),
+        })
+        .where(and(eq(orders.id, input.id), eq(orders.tenantId, ctx.tenantId)))
+        .returning();
+
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Send tracking email if order has a customer email
+      if (updated.customerEmail && updated.trackingNumber) {
+        const addr = updated.shippingAddress as { firstName?: string; lastName?: string } | null;
+        const customerName = addr?.firstName
+          ? `${addr.firstName} ${addr.lastName ?? ""}`.trim()
+          : updated.customerEmail;
+        sendTransactional({
+          db: ctx.db,
+          tenantId: ctx.tenantId,
+          to: updated.customerEmail,
+          type: "shipping_update",
+          vars: {
+            customer_name: customerName,
+            order_number: String(updated.orderNumber),
+            order_total: `R ${Number(updated.total).toFixed(2)}`,
+            order_status: "Shipped",
+            tracking_number: updated.trackingNumber,
+            tracking_carrier: updated.trackingCarrier ?? "",
+          },
+        }).catch(() => {/* non-fatal */});
+      }
+
+      return updated;
+    }),
+
+  cancel: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        fulfillmentNotes: z.string().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [order] = await ctx.db
+        .select()
+        .from(orders)
+        .where(and(eq(orders.id, input.id), eq(orders.tenantId, ctx.tenantId)))
+        .limit(1);
+
+      if (!order) throw new TRPCError({ code: "NOT_FOUND" });
+      if (order.status === "cancelled") throw new TRPCError({ code: "BAD_REQUEST", message: "Order is already cancelled" });
+      if (order.status === "delivered") throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot cancel a delivered order" });
+
+      // Restore inventory
+      const lineItems = await ctx.db
+        .select()
+        .from(orderLineItems)
+        .where(eq(orderLineItems.orderId, order.id));
+
+      for (const item of lineItems) {
+        if (item.variantId) {
+          await ctx.db
+            .update(variants)
+            .set({ inventory: sql`${variants.inventory} + ${item.quantity}` })
+            .where(eq(variants.id, item.variantId));
+        }
+      }
+
+      const [updated] = await ctx.db
+        .update(orders)
+        .set({
+          status: "cancelled",
+          fulfillmentNotes: input.fulfillmentNotes ?? order.fulfillmentNotes,
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, order.id))
+        .returning();
+
+      return updated!;
+    }),
+
+  updateFulfillmentNotes: adminProcedure
+    .input(z.object({ id: z.string().uuid(), fulfillmentNotes: z.string().max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(orders)
+        .set({ fulfillmentNotes: input.fulfillmentNotes, updatedAt: new Date() })
+        .where(and(eq(orders.id, input.id), eq(orders.tenantId, ctx.tenantId)))
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+
   // Public: create an order from a cart submission
   create: publicProcedure
     .input(
