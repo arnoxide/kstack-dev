@@ -10,6 +10,7 @@ const queryClient = postgres(connectionString, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  ssl: process.env["NODE_ENV"] === "production" ? "require" : false,
 });
 
 export const db = drizzle(queryClient, { schema, logger: process.env["NODE_ENV"] === "development" });
