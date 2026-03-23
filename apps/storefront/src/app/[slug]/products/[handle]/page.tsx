@@ -2,7 +2,7 @@ import { api } from "@/lib/api";
 import { notFound } from "next/navigation";
 import { ProductVariantSelector } from "@/components/product-variant-selector";
 import { ProductImageGallery } from "@/components/product-image-gallery";
-import { ProductReviews } from "@/components/product-reviews";
+import { ProductReviews, type Review } from "@/components/product-reviews";
 import { WishlistButton } from "@/components/wishlist-button";
 import { AIRecommendations } from "@/components/ai-recommendations";
 import Link from "next/link";
@@ -101,8 +101,8 @@ export default async function ProductPage({
           {/* Meta */}
           <div className="mt-6 pt-4 border-t border-gray-100 space-y-1.5 text-xs text-gray-400">
             <p>Handle: <span className="font-mono">{product.handle}</span></p>
-            {product.variants.length > 0 && product.variants[0].sku && (
-              <p>SKU: <span className="font-mono">{product.variants[0].sku}</span></p>
+            {product.variants.length > 0 && product.variants[0]?.sku && (
+              <p>SKU: <span className="font-mono">{product.variants[0]?.sku}</span></p>
             )}
           </div>
         </div>
@@ -112,7 +112,7 @@ export default async function ProductPage({
       <ProductReviews
         tenantId={shop.tenant.id}
         productId={product.id}
-        initialReviews={reviewsData.reviews}
+        initialReviews={reviewsData.reviews as unknown as Review[]}
         initialAvg={reviewsData.avgRating}
         initialTotal={reviewsData.total}
       />

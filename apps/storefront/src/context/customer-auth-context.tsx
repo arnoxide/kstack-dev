@@ -86,7 +86,7 @@ export function CustomerAuthProvider({ tenantId, children }: { tenantId: string;
   const login = async (tid: string, email: string, password: string) => {
     const result = await api.customerAuth.login.mutate({ tenantId: tid, email, password });
     setToken(result.token);
-    setCustomer(result.customer as CustomerProfile);
+    setCustomer(result.customer as unknown as CustomerProfile);
     localStorage.setItem(TOKEN_KEY(tid), result.token);
   };
 

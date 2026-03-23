@@ -33,7 +33,7 @@ export default async function ProductsPage({
       collections={collections}
       slug={slug}
       tenantId={shop.tenant.id}
-      activeCollectionHandle={resolvedSearch.collection}
+      {...(resolvedSearch.collection ? { activeCollectionHandle: resolvedSearch.collection } : {})}
     />
   );
 }

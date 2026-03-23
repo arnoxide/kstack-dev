@@ -4,7 +4,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { Star, Loader2, CheckCircle } from "lucide-react";
 
-interface Review {
+export interface Review {
   id: string;
   customerName: string;
   rating: number;

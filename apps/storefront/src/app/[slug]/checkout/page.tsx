@@ -107,7 +107,7 @@ export default function CheckoutPage() {
     api.shipping.rates.query({ tenantId, subtotal: total })
       .then((rates) => {
         setShippingRates(rates);
-        if (rates.length > 0 && !selectedRateId) setSelectedRateId(rates[0].id);
+        if (rates.length > 0 && !selectedRateId) setSelectedRateId(rates[0]?.id ?? null);
       })
       .catch(() => {})
       .finally(() => setLoadingRates(false));

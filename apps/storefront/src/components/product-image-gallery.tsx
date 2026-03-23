@@ -56,7 +56,7 @@ export function ProductImageGallery({ images, title }: ProductImageGalleryProps)
     );
   }
 
-  const active = images[activeIndex];
+  const active = images[activeIndex]!;
 
   return (
     <>

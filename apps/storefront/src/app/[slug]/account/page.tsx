@@ -63,7 +63,7 @@ function AuthSection({ tenantId, slug, onRegistered }: { tenantId: string; slug:
     setRegLoading(true);
     setRegError("");
     try {
-      await register(tenantId, { email: regEmail, password: regPassword, firstName: regFirst, lastName: regLast, phone: regPhone || undefined });
+      await register(tenantId, { email: regEmail, password: regPassword, firstName: regFirst, lastName: regLast, ...(regPhone ? { phone: regPhone } : {}) });
       onRegistered?.();
     } catch (err: unknown) {
       setRegError((err as { message?: string }).message ?? "Registration failed");
@@ -278,7 +278,7 @@ function ProfileSection({ slug, tenantId, justRegistered }: { slug: string; tena
       if (!client) return;
       setOrdersLoading(true);
       client.customerAuth.myOrders.query({})
-        .then((data) => setOrders(data as Order[]))
+        .then((data) => setOrders(data as unknown as Order[]))
         .catch(() => {})
         .finally(() => setOrdersLoading(false));
     }
