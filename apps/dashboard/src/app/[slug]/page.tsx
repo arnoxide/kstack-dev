@@ -79,12 +79,12 @@ export default function DashboardOverviewPage() {
           <p className="text-gray-500 mt-1 text-sm flex items-center gap-1.5">
             Your store is live at{" "}
             <a
-              href={`http://localhost:3003/${params.slug}`}
+              href={storeUrl}
               className="text-blue-600 hover:underline inline-flex items-center gap-1"
               target="_blank"
               rel="noreferrer"
             >
-              localhost:3003/{params.slug}
+              {storeUrl.replace(/^https?:\/\//, "")}
               <ExternalLink className="w-3 h-3" />
             </a>
           </p>

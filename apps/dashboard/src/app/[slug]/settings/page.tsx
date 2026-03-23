@@ -38,6 +38,7 @@ function loadConfig(slug: string): LocalConfig {
 
 export default function SettingsPage() {
   const params = useParams<{ slug: string }>();
+  const storeUrl = `${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003"}/${params.slug}`;
 
   // ── Store config (local for now) ─────────────────────────────────────────
   const [currency, setCurrency] = useState("ZAR");
@@ -179,12 +180,12 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              value={`localhost:3003/${params.slug}`}
+              value={storeUrl.replace(/^https?:\/\//, "")}
               readOnly
               className="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-gray-50 text-gray-500"
             />
             <a
-              href={`http://localhost:3003/${params.slug}`}
+              href={storeUrl}
               target="_blank"
               rel="noreferrer"
               className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"

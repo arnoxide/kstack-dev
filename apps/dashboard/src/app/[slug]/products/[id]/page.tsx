@@ -419,6 +419,7 @@ function AddVariantForm({
 export default function EditProductPage() {
   const params = useParams<{ slug: string; id: string }>();
   const router = useRouter();
+  const storefrontBase = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003";
 
   const { data: product, isLoading, refetch } = trpc.products.get.useQuery({ id: params.id });
 
@@ -497,7 +498,7 @@ export default function EditProductPage() {
           </div>
         </div>
         <a
-          href={`http://localhost:3003/${params.slug}/products/${product.handle}`}
+          href={`${storefrontBase}/${params.slug}/products/${product.handle}`}
           target="_blank"
           rel="noreferrer"
           className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"

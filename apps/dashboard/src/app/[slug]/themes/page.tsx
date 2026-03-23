@@ -41,6 +41,7 @@ function ColorInput({
 
 export default function ThemesPage() {
   const params = useParams<{ slug: string }>();
+  const storeUrl = `${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003"}/${params.slug}`;
   const { data: themes, isLoading, refetch } = trpc.storefront.themes.list.useQuery();
 
   const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
@@ -105,7 +106,7 @@ export default function ThemesPage() {
         </div>
         <div className="flex items-center gap-3">
           <a
-            href={`http://localhost:3003/${params.slug}`}
+            href={storeUrl}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
