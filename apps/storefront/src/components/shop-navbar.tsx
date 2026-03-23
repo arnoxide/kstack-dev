@@ -32,6 +32,7 @@ export function ShopNavbar({ shop }: ShopNavbarProps) {
   const links = [
     { href: `/${slug}`, label: "Home" },
     { href: `/${slug}/products`, label: "Products" },
+    { href: `/${slug}/track`, label: "Track Order" },
   ];
 
   return (
