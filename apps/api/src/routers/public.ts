@@ -5,6 +5,7 @@ import {
   collections,
   collectionProducts,
   domains,
+  integrations,
   pages,
   productImages,
   products,
@@ -210,6 +211,41 @@ export const publicRouter = router({
         .select()
         .from(collections)
         .where(eq(collections.tenantId, input.tenantId));
+    }),
+
+  // Returns the active payment provider + public key for the storefront checkout
+  // Only exposes the public key — never the secret key
+  paymentConfig: publicProcedure
+    .input(z.object({ tenantId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const PAYMENT_PROVIDERS = ["paystack", "stripe", "yoco", "payfast", "paypal"] as const;
+
+      for (const provider of PAYMENT_PROVIDERS) {
+        const [row] = await ctx.db
+          .select()
+          .from(integrations)
+          .where(
+            and(
+              eq(integrations.tenantId, input.tenantId),
+              eq(integrations.provider, provider as "stripe"),
+              eq(integrations.isEnabled, true),
+            ),
+          )
+          .limit(1);
+
+        if (row?.config) {
+          const publicKey =
+            (row.config as Record<string, string>)["publicKey"] ??
+            (row.config as Record<string, string>)["publishableKey"] ??
+            null;
+
+          if (publicKey) {
+            return { provider, publicKey };
+          }
+        }
+      }
+
+      return null; // No payment integration configured — COD
     }),
 
   // Get the published home page for a tenant

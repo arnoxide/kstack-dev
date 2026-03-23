@@ -10,8 +10,6 @@ import Script from "next/script";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle, Loader2, ShoppingBag, Tag, Truck, X } from "lucide-react";
 
-const PAYSTACK_PUBLIC_KEY = process.env["NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY"] ?? "";
-
 declare global {
   interface Window {
     PaystackPop: {
@@ -115,6 +113,15 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState("");
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
+  // Payment config
+  const [paymentConfig, setPaymentConfig] = useState<{ provider: string; publicKey: string } | null>(null);
+  useEffect(() => {
+    if (!tenantId) return;
+    api.public.paymentConfig.query({ tenantId })
+      .then((cfg) => setPaymentConfig(cfg))
+      .catch(() => {});
+  }, [tenantId]);
+
   // Submit
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -187,7 +194,7 @@ export default function CheckoutPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!PAYSTACK_PUBLIC_KEY || !window.PaystackPop) {
+    if (!paymentConfig || paymentConfig.provider !== "paystack" || !window.PaystackPop) {
       // No Paystack configured — COD flow
       void placeOrder();
       return;
@@ -197,7 +204,7 @@ export default function CheckoutPage() {
     const ref = `kasify_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     const handler = window.PaystackPop.setup({
-      key: PAYSTACK_PUBLIC_KEY,
+      key: paymentConfig.publicKey,
       email,
       amount: Math.round(orderTotal * 100), // Paystack expects kobo/cents
       currency: "ZAR",
@@ -230,7 +237,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      {PAYSTACK_PUBLIC_KEY && (
+      {paymentConfig?.provider === "paystack" && (
         <Script src="https://js.paystack.co/v1/inline.js" strategy="beforeInteractive" />
       )}
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
@@ -326,10 +333,10 @@ export default function CheckoutPage() {
             {/* Payment */}
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment</h2>
-              {PAYSTACK_PUBLIC_KEY ? (
+              {paymentConfig ? (
                 <div className="border border-green-200 rounded-lg p-4 bg-green-50 text-sm text-green-800 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 shrink-0" />
-                  Secure payment via Paystack — you&apos;ll be prompted to pay after clicking the button below.
+                  Secure payment via {paymentConfig.provider.charAt(0).toUpperCase() + paymentConfig.provider.slice(1)} — you&apos;ll be prompted to pay after clicking the button below.
                 </div>
               ) : (
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 text-sm text-gray-500 text-center">
@@ -351,8 +358,8 @@ export default function CheckoutPage() {
             >
               {submitting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>
-              ) : PAYSTACK_PUBLIC_KEY ? (
-                <>Pay {formatCurrency(orderTotal)} with Paystack</>
+              ) : paymentConfig ? (
+                <>Pay {formatCurrency(orderTotal)} with {paymentConfig.provider.charAt(0).toUpperCase() + paymentConfig.provider.slice(1)}</>
               ) : (
                 <>Place Order — {formatCurrency(orderTotal)}</>
               )}

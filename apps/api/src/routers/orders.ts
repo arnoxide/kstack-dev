@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { coupons, couponUsages, customers, orderLineItems, orders, shippingRates, variants } from "@kasify/db";
+import { coupons, couponUsages, customers, integrations, orderLineItems, orders, shippingRates, variants } from "@kasify/db";
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../trpc";
 import { sendTransactional } from "../lib/email";
 import { LIMITS } from "../lib/rateLimiter";
@@ -356,11 +356,28 @@ export const ordersRouter = router({
       // 4b. Verify Paystack payment if reference provided
       let financialStatus: "pending" | "paid" | "failed" = "pending";
       if (input.paystackReference) {
-        const payment = await verifyPaystackPayment(input.paystackReference);
+        // Look up tenant's Paystack secret key from their integrations
+        const [integration] = await ctx.db
+          .select()
+          .from(integrations)
+          .where(
+            and(
+              eq(integrations.tenantId, input.tenantId),
+              eq(integrations.provider, "paystack" as "stripe"),
+              eq(integrations.isEnabled, true),
+            ),
+          )
+          .limit(1);
+
+        const secretKey = (integration?.config as Record<string, string> | undefined)?.["secretKey"];
+        if (!secretKey) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payment configuration error. Please contact the store." });
+        }
+
+        const payment = await verifyPaystackPayment(input.paystackReference, secretKey);
         if (payment.status !== "success") {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Payment was not successful. Please try again." });
         }
-        // Verify amount matches (Paystack amounts are in cents, total is in rands)
         const expectedKobo = Math.round(total * 100);
         if (Math.abs(payment.amount - expectedKobo) > 1) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Payment amount mismatch. Please contact support." });

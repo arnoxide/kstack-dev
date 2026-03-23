@@ -6,9 +6,8 @@ import { logger } from "hono/logger";
 import { createContext } from "./context";
 import { appRouter } from "./router";
 import { verifyPaystackWebhook } from "./lib/paystack";
-import { db } from "@kasify/db";
-import { orders } from "@kasify/db";
-import { eq } from "drizzle-orm";
+import { db, integrations, orders } from "@kasify/db";
+import { and, eq } from "drizzle-orm";
 
 const app = new Hono();
 
@@ -33,13 +32,10 @@ app.use(
 // Health check
 app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
 
-// Paystack webhook — must be outside CORS, raw body needed
+// Paystack webhook — outside CORS, raw body
 app.post("/webhook/paystack", async (c) => {
   const signature = c.req.header("x-paystack-signature") ?? "";
   const payload = await c.req.text();
-
-  const valid = await verifyPaystackWebhook(payload, signature);
-  if (!valid) return c.json({ error: "Invalid signature" }, 401);
 
   let event: { event: string; data: { reference: string; status: string } };
   try {
@@ -49,10 +45,32 @@ app.post("/webhook/paystack", async (c) => {
   }
 
   if (event.event === "charge.success" && event.data.status === "success") {
-    await db
-      .update(orders)
-      .set({ financialStatus: "paid", updatedAt: new Date() })
-      .where(eq(orders.paystackReference, event.data.reference));
+    // Find order by reference to get tenantId, then look up their webhook secret
+    const [order] = await db
+      .select({ id: orders.id, tenantId: orders.tenantId })
+      .from(orders)
+      .where(eq(orders.paystackReference, event.data.reference))
+      .limit(1);
+
+    if (order) {
+      // Verify signature with tenant's webhook secret
+      const [integration] = await db
+        .select({ config: integrations.config })
+        .from(integrations)
+        .where(and(eq(integrations.tenantId, order.tenantId), eq(integrations.provider, "paystack" as "stripe")))
+        .limit(1);
+
+      const webhookSecret = (integration?.config as Record<string, string> | undefined)?.["webhookSecret"] ?? "";
+      if (webhookSecret) {
+        const valid = await verifyPaystackWebhook(payload, signature, webhookSecret);
+        if (!valid) return c.json({ error: "Invalid signature" }, 401);
+      }
+
+      await db
+        .update(orders)
+        .set({ financialStatus: "paid", updatedAt: new Date() })
+        .where(eq(orders.id, order.id));
+    }
   }
 
   return c.json({ received: true });

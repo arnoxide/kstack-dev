@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 type Provider =
-  | "stripe" | "payfast" | "yoco" | "paypal"
+  | "stripe" | "paystack" | "payfast" | "yoco" | "paypal"
   | "the_courier_guy" | "aramex" | "dhl" | "fastway"
   | "mailchimp" | "klaviyo" | "sendgrid"
   | "google_analytics" | "facebook_pixel" | "hotjar" | "tiktok_pixel";
@@ -39,6 +39,17 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
           { key: "publishableKey", label: "Publishable Key", placeholder: "pk_live_..." },
           { key: "secretKey", label: "Secret Key", placeholder: "sk_live_...", secret: true },
           { key: "webhookSecret", label: "Webhook Secret", placeholder: "whsec_...", secret: true },
+        ],
+      },
+      {
+        provider: "paystack",
+        name: "Paystack",
+        description: "Accept card, bank transfer and mobile money payments across Africa.",
+        logo: "https://website-v3-assets.s3.amazonaws.com/assets/img/hero/Paystack-mark-white-twitter.png",
+        fields: [
+          { key: "publicKey", label: "Public Key", placeholder: "pk_live_..." },
+          { key: "secretKey", label: "Secret Key", placeholder: "sk_live_...", secret: true },
+          { key: "webhookSecret", label: "Webhook Secret (optional)", placeholder: "your webhook secret", secret: true },
         ],
       },
       {

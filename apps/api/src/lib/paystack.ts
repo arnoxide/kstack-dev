@@ -1,7 +1,5 @@
 // Paystack payment verification helper
 
-const PAYSTACK_SECRET = process.env["PAYSTACK_SECRET_KEY"] ?? "";
-
 export interface PaystackVerifyResult {
   status: "success" | "failed" | "abandoned";
   amount: number; // in kobo/cents (ZAR: multiply by 100)
@@ -9,13 +7,13 @@ export interface PaystackVerifyResult {
   reference: string;
 }
 
-export async function verifyPaystackPayment(reference: string): Promise<PaystackVerifyResult> {
-  if (!PAYSTACK_SECRET) {
-    throw new Error("PAYSTACK_SECRET_KEY is not configured");
+export async function verifyPaystackPayment(reference: string, secretKey: string): Promise<PaystackVerifyResult> {
+  if (!secretKey) {
+    throw new Error("Paystack secret key not configured");
   }
 
   const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
+    headers: { Authorization: `Bearer ${secretKey}` },
   });
 
   if (!res.ok) {
@@ -39,8 +37,8 @@ export async function verifyPaystackPayment(reference: string): Promise<Paystack
 export async function verifyPaystackWebhook(
   payload: string,
   signature: string,
+  secret: string,
 ): Promise<boolean> {
-  const secret = process.env["PAYSTACK_WEBHOOK_SECRET"] ?? PAYSTACK_SECRET;
   if (!secret) return false;
 
   const encoder = new TextEncoder();

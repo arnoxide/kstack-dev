@@ -5,6 +5,7 @@ import { tenants } from "./tenants";
 export const INTEGRATION_PROVIDERS = [
   // Payments
   "stripe",
+  "paystack",
   "payfast",
   "yoco",
   "paypal",
