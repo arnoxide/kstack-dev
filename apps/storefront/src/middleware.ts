@@ -29,9 +29,17 @@ export function middleware(req: NextRequest) {
 
   if (isSubdomain) {
     const slug = host.slice(0, -(ROOT_DOMAIN.length + 1)); // strip ".zansify.com"
-    // Rewrite transparently — browser URL stays "slug.zansify.com/products"
-    // but Next.js internally serves "/[slug]/products"
-    url.pathname = `/${slug}${pathname === "/" ? "" : pathname}`;
+
+    // Strip double-slug: Next.js internal links use "/{slug}/..." hrefs.
+    // When those are fetched on the subdomain the middleware would prepend
+    // the slug again → "/masutha/masutha/products". Detect and strip first.
+    const slugPrefix = `/${slug}`;
+    const cleanPath =
+      pathname === slugPrefix || pathname.startsWith(slugPrefix + "/")
+        ? pathname.slice(slugPrefix.length) || "/"
+        : pathname;
+
+    url.pathname = `/${slug}${cleanPath === "/" ? "" : cleanPath}`;
     return NextResponse.rewrite(url);
   }
 
