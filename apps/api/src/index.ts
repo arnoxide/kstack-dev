@@ -15,15 +15,36 @@ const app = new Hono();
 // Middleware
 app.use("*", logger());
 const isProd = process.env["NODE_ENV"] === "production";
-const allowedOrigins = [
-  ...(isProd ? [] : ["http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:3005"]),
-  ...(process.env["ALLOWED_ORIGINS"]?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
-];
+const ROOT_DOMAIN = process.env["ROOT_DOMAIN"] ?? "zansify.com";
+
+// Explicit extra origins (comma-separated) — e.g. a custom dashboard URL
+const explicitOrigins = new Set(
+  process.env["ALLOWED_ORIGINS"]?.split(",").map((o) => o.trim()).filter(Boolean) ?? [],
+);
+
+const devOrigins = new Set([
+  "http://localhost:3002",
+  "http://localhost:3003",
+  "http://localhost:3004",
+  "http://localhost:3005",
+]);
 
 app.use(
   "*",
   cors({
-    origin: allowedOrigins,
+    origin: (origin) => {
+      if (!origin) return null;
+      // Allow any subdomain of the root domain and the apex itself
+      if (
+        origin === `https://${ROOT_DOMAIN}` ||
+        origin.endsWith(`.${ROOT_DOMAIN}`)
+      ) return origin;
+      // Allow explicitly listed origins (e.g. custom dashboard domain)
+      if (explicitOrigins.has(origin)) return origin;
+      // Allow localhost in dev
+      if (!isProd && devOrigins.has(origin)) return origin;
+      return null;
+    },
     credentials: true,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "OPTIONS"],
