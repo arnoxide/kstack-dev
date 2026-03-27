@@ -1,5 +1,5 @@
 {
-  "extends": "@kasify/config/tsconfig",
+  "extends": "@kstack/config/tsconfig",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",

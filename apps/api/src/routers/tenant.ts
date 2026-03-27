@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { domains, tenants } from "@kasify/db";
+import { domains, tenants } from "@kstack/db";
 import { protectedProcedure, adminProcedure, router } from "../trpc";
 import { randomBytes } from "node:crypto";
 

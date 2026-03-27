@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { productImages, products, variants } from "@kasify/db";
-import { CreateProductSchema, CreateVariantSchema } from "@kasify/types";
+import { productImages, products, variants } from "@kstack/db";
+import { CreateProductSchema, CreateVariantSchema } from "@kstack/types";
 import { protectedProcedure, router } from "../trpc";
 
 function slugify(text: string): string {
@@ -73,6 +73,8 @@ export const productsRouter = router({
         handle,
         status: input.status ?? "draft",
         tags: input.tags ?? [],
+        isRecommended: input.isRecommended,
+        goesWithIds: input.goesWithIds,
       })
       .returning();
 

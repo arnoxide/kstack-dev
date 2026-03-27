@@ -1,4 +1,4 @@
-// Module: Kasify_Docs
+// Module: KStack_Docs
 "use client";
 
 import Link from "next/link";
@@ -526,7 +526,7 @@ export default function DocsPage() {
           </div>
           <div>
             <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Getting started</p>
-            <h1 className="text-xl font-bold">Welcome to Kasify, {storeName} 👋</h1>
+            <h1 className="text-xl font-bold">Welcome to KStack, {storeName} 👋</h1>
           </div>
         </div>
         <p className="text-gray-300 text-sm max-w-xl leading-relaxed">

@@ -31,19 +31,19 @@ import { getDisabledModules } from "@/lib/modules";
 
 const navItems = (slug: string) => [
   { href: `/${slug}`, label: "Overview", icon: LayoutDashboard, module: null },
-  { href: `/${slug}/products`, label: "Products", icon: Package, module: "Kasify_Catalog" },
-  { href: `/${slug}/collections`, label: "Collections", icon: FolderOpen, module: "Kasify_Collections" },
-  { href: `/${slug}/orders`, label: "Orders", icon: ShoppingCart, module: "Kasify_Orders" },
-  { href: `/${slug}/customers`, label: "Customers", icon: Users, module: "Kasify_Customers" },
-  { href: `/${slug}/themes`, label: "Themes & Pages", icon: Palette, module: "Kasify_Storefront" },
-  { href: `/${slug}/pages`, label: "Pages", icon: Layout, module: "Kasify_Storefront" },
-  { href: `/${slug}/analytics`, label: "Analytics", icon: BarChart3, module: "Kasify_Analytics" },
-  { href: `/${slug}/coupons`, label: "Coupons", icon: Tag, module: "Kasify_Coupons" },
-  { href: `/${slug}/shipping`, label: "Shipping", icon: Truck, module: "Kasify_Shipping" },
-  { href: `/${slug}/reviews`, label: "Reviews", icon: MessageSquare, module: "Kasify_Reviews" },
-  { href: `/${slug}/integrations`, label: "Integrations", icon: Plug, module: "Kasify_Integrations" },
-  { href: `/${slug}/ai-assistant`, label: "AI Assistant", icon: Bot, module: "Kasify_AIAssistant" },
-  { href: `/${slug}/email`, label: "Email", icon: Mail, module: "Kasify_Email" },
+  { href: `/${slug}/products`, label: "Products", icon: Package, module: "KStack_Catalog" },
+  { href: `/${slug}/collections`, label: "Collections", icon: FolderOpen, module: "KStack_Collections" },
+  { href: `/${slug}/orders`, label: "Orders", icon: ShoppingCart, module: "KStack_Orders" },
+  { href: `/${slug}/customers`, label: "Customers", icon: Users, module: "KStack_Customers" },
+  { href: `/${slug}/themes`, label: "Themes & Pages", icon: Palette, module: "KStack_Storefront" },
+  { href: `/${slug}/pages`, label: "Pages", icon: Layout, module: "KStack_Storefront" },
+  { href: `/${slug}/analytics`, label: "Analytics", icon: BarChart3, module: "KStack_Analytics" },
+  { href: `/${slug}/coupons`, label: "Coupons", icon: Tag, module: "KStack_Coupons" },
+  { href: `/${slug}/shipping`, label: "Shipping", icon: Truck, module: "KStack_Shipping" },
+  { href: `/${slug}/reviews`, label: "Reviews", icon: MessageSquare, module: "KStack_Reviews" },
+  { href: `/${slug}/integrations`, label: "Integrations", icon: Plug, module: "KStack_Integrations" },
+  { href: `/${slug}/ai-assistant`, label: "AI Assistant", icon: Bot, module: "KStack_AIAssistant" },
+  { href: `/${slug}/email`, label: "Email", icon: Mail, module: "KStack_Email" },
   // ── Custom modules added by scaffold CLI appear below ───────────────────────
   { href: `/${slug}/docs`, label: "Help & Docs", icon: BookOpen, module: null },
   { href: `/${slug}/settings`, label: "Settings", icon: Settings, module: null },
@@ -75,7 +75,7 @@ export function Sidebar({ slug }: { slug: string }) {
         <div className="flex items-center gap-2">
           <Store className="w-6 h-6 text-blue-400" />
           <div>
-            <p className="font-semibold text-sm leading-none">Kasify</p>
+            <p className="font-semibold text-sm leading-none">KStack</p>
             <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[140px]">
               {auth.tenant?.name ?? slug}
             </p>

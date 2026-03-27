@@ -21,6 +21,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 // ── Auth forms ────────────────────────────────────────────────────────────────
 
@@ -218,6 +219,7 @@ function OrderCard({ order, slug }: { order: Order; slug: string }) {
 }
 
 function ProfileSection({ slug, tenantId, justRegistered }: { slug: string; tenantId: string; justRegistered?: boolean }) {
+  const confirm = useConfirm();
   const { customer, logout, refresh, getAuthedClient } = useCustomerAuth();
   const [tab, setTab] = useState<"overview" | "orders" | "profile" | "address" | "password">("overview");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -332,7 +334,8 @@ function ProfileSection({ slug, tenantId, justRegistered }: { slug: string; tena
   };
 
   const handleRemoveAddress = async () => {
-    if (!confirm("Remove your saved address?")) return;
+    const ok = await confirm({ title: "Remove address", message: "Remove your saved address?", danger: true });
+    if (!ok) return;
     setAddrRemoving(true);
     try {
       const client = getAuthedClient();

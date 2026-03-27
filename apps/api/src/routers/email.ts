@@ -1,7 +1,7 @@
-// Module: Kasify_Email
+// Module: KStack_Email
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { emailSettings, emailLogs, emailTemplates, EMAIL_TEMPLATE_TYPES } from "@kasify/db";
+import { emailSettings, emailLogs, emailTemplates, EMAIL_TEMPLATE_TYPES } from "@kstack/db";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, adminProcedure, router } from "../trpc";
 import {
@@ -96,7 +96,7 @@ export const emailRouter = router({
           await transporter.sendMail({
             from: `"${settings.fromName ?? settings.fromEmail}" <${settings.fromEmail}>`,
             to: input.toEmail,
-            subject: "Kasify — Test Email",
+            subject: "KStack — Test Email",
             html: `<div style="font-family:Arial,sans-serif;padding:24px;max-width:600px">
               <h2>Test Email ✅</h2>
               <p>Your email configuration is working correctly.</p>

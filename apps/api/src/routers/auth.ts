@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
-import { hashPassword, signAccessToken, signRefreshToken, verifyPassword } from "@kasify/auth";
-import { merchantUsers, refreshTokens, tenants, users } from "@kasify/db";
-import { LoginSchema, RegisterSchema } from "@kasify/types";
+import { hashPassword, signAccessToken, signRefreshToken, verifyPassword } from "@kstack/auth";
+import { merchantUsers, refreshTokens, tenants, users } from "@kstack/db";
+import { LoginSchema, RegisterSchema } from "@kstack/types";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { createHash, randomBytes } from "node:crypto";
 import { LIMITS } from "../lib/rateLimiter";

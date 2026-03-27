@@ -5,8 +5,10 @@ import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { Plus, Package, Pencil, Trash2, Search } from "lucide-react";
 import { useState } from "react";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function ProductsPage() {
+  const confirm = useConfirm();
   const params = useParams<{ slug: string }>();
   const { data: products, isLoading, refetch } = trpc.products.list.useQuery({ limit: 100 });
   const [search, setSearch] = useState("");
@@ -139,10 +141,10 @@ export default function ProductsPage() {
                         <Pencil className="w-4 h-4" />
                       </Link>
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete "${product.title}"? This cannot be undone.`)) {
-                            deleteMutation.mutate({ id: product.id });
-                          }
+                        onClick={async () => {
+                          const ok = await confirm({ title: "Delete product", message: `Delete "${product.title}"? This cannot be undone.`, danger: true });
+                          if (!ok) return;
+                          deleteMutation.mutate({ id: product.id });
                         }}
                         disabled={deleteMutation.isPending}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

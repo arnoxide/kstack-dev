@@ -3,7 +3,7 @@ import postgres from "postgres";
 import * as schema from "./schema/index";
 
 const connectionString =
-  process.env["DATABASE_URL"] ?? "postgresql://kasify:kasify@localhost:5432/kasify";
+  process.env["DATABASE_URL"] ?? "postgresql://kstack:kstack@localhost:5432/kstack";
 
 // For query purposes (connection pool)
 const queryClient = postgres(connectionString, {

@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm --filter @kasify/storefront build",
+  "buildCommand": "cd ../.. && pnpm --filter @kstack/storefront build",
   "outputDirectory": ".next"
 }

@@ -29,13 +29,13 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.4.3
         version: 0.4.3(hono@4.12.8)(zod@3.25.76)
-      '@kasify/auth':
+      '@kstack/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@kasify/db':
+      '@kstack/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@kasify/types':
+      '@kstack/types':
         specifier: workspace:*
         version: link:../../packages/types
       '@trpc/server':
@@ -54,7 +54,7 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@kasify/config':
+      '@kstack/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -81,10 +81,10 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.4)
-      '@kasify/api':
+      '@kstack/api':
         specifier: workspace:*
         version: link:../api
-      '@kasify/types':
+      '@kstack/types':
         specifier: workspace:*
         version: link:../../packages/types
       '@tanstack/react-query':
@@ -121,7 +121,7 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@kasify/config':
+      '@kstack/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -148,10 +148,10 @@ importers:
 
   apps/storefront:
     dependencies:
-      '@kasify/api':
+      '@kstack/api':
         specifier: workspace:*
         version: link:../api
-      '@kasify/types':
+      '@kstack/types':
         specifier: workspace:*
         version: link:../../packages/types
       '@trpc/client':
@@ -182,7 +182,7 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@kasify/config':
+      '@kstack/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -209,7 +209,7 @@ importers:
 
   packages/auth:
     dependencies:
-      '@kasify/types':
+      '@kstack/types':
         specifier: workspace:*
         version: link:../types
       bcryptjs:
@@ -219,7 +219,7 @@ importers:
         specifier: ^5.9.6
         version: 5.10.0
     devDependencies:
-      '@kasify/config':
+      '@kstack/config':
         specifier: workspace:*
         version: link:../config
       '@types/bcryptjs':
@@ -240,7 +240,7 @@ importers:
         specifier: ^3.4.5
         version: 3.4.8
     devDependencies:
-      '@kasify/config':
+      '@kstack/config':
         specifier: workspace:*
         version: link:../config
       drizzle-kit:
@@ -259,7 +259,7 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
-      '@kasify/config':
+      '@kstack/config':
         specifier: workspace:*
         version: link:../config
       typescript:

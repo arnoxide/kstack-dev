@@ -1,9 +1,9 @@
 "use client";
-// Module: Kasify_AIAssistant
+// Module: KStack_AIAssistant
 
 import { useEffect, useState } from "react";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import type { AppRouter } from "@kasify/api/router";
+import type { AppRouter } from "@kstack/api/router";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 

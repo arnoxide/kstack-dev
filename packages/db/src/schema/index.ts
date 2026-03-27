@@ -9,3 +9,4 @@ export * from "./reviews";
 export * from "./shipping";
 export * from "./aiAssistant";
 export * from "./email";
+export * from "./platform";

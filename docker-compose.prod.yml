@@ -3,21 +3,21 @@ services:
   # ── PostgreSQL ──────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: kasify-postgres
+    container_name: kstack-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-kasify}
+      POSTGRES_USER: ${POSTGRES_USER:-kstack}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-kasify}
+      POSTGRES_DB: ${POSTGRES_DB:-kstack}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kasify}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kstack}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - kasify
+      - kstack
 
   # ── Database migrations (runs once then exits) ──────────────
   migrate:
@@ -27,23 +27,23 @@ services:
       target: builder
     command: pnpm db:push
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-kasify}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasify}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kstack}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kstack}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - kasify
+      - kstack
 
   # ── API server ──────────────────────────────────────────────
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: kasify-api
+    container_name: kstack-api
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-kasify}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kasify}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kstack}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kstack}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
@@ -66,11 +66,11 @@ services:
       timeout: 10s
       retries: 3
     networks:
-      - kasify
+      - kstack
 
 volumes:
   postgres_data:
 
 networks:
-  kasify:
+  kstack:
     driver: bridge

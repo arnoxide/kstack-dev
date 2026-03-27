@@ -1,8 +1,8 @@
 {
-  "vendor": "Kasify",
+  "vendor": "KStack",
   "modules": [
     {
-      "name": "Kasify_Catalog",
+      "name": "KStack_Catalog",
       "description": "Products, variants, images, collections and inventory management",
       "status": "active",
       "version": "1.0.0",
@@ -21,7 +21,7 @@
       }
     },
     {
-      "name": "Kasify_Collections",
+      "name": "KStack_Collections",
       "description": "Product collections (categories) with product membership management",
       "status": "active",
       "version": "1.0.0",
@@ -33,7 +33,7 @@
       }
     },
     {
-      "name": "Kasify_Orders",
+      "name": "KStack_Orders",
       "description": "Order creation, line items, order status and fulfilment management",
       "status": "active",
       "version": "1.0.0",
@@ -48,7 +48,7 @@
       }
     },
     {
-      "name": "Kasify_Customers",
+      "name": "KStack_Customers",
       "description": "Customer accounts, profiles, order history and authentication",
       "status": "active",
       "version": "1.0.0",
@@ -63,7 +63,7 @@
       }
     },
     {
-      "name": "Kasify_Coupons",
+      "name": "KStack_Coupons",
       "description": "Discount codes — percentage, fixed amount, and free shipping",
       "status": "active",
       "version": "1.0.0",
@@ -75,7 +75,7 @@
       }
     },
     {
-      "name": "Kasify_Shipping",
+      "name": "KStack_Shipping",
       "description": "Shipping rates and methods (flat rate, free over amount, always free)",
       "status": "active",
       "version": "1.0.0",
@@ -87,7 +87,7 @@
       }
     },
     {
-      "name": "Kasify_Reviews",
+      "name": "KStack_Reviews",
       "description": "Product reviews submission and admin moderation",
       "status": "active",
       "version": "1.0.0",
@@ -101,7 +101,7 @@
       }
     },
     {
-      "name": "Kasify_Storefront",
+      "name": "KStack_Storefront",
       "description": "Themes, theme settings, drag-and-drop page builder and block rendering",
       "status": "active",
       "version": "1.0.0",
@@ -119,7 +119,7 @@
       }
     },
     {
-      "name": "Kasify_Integrations",
+      "name": "KStack_Integrations",
       "description": "Third-party service integrations (payment, analytics, marketing, etc.)",
       "status": "active",
       "version": "1.0.0",
@@ -131,7 +131,7 @@
       }
     },
     {
-      "name": "Kasify_Analytics",
+      "name": "KStack_Analytics",
       "description": "Store analytics: revenue, orders, top products and customer stats",
       "status": "active",
       "version": "1.0.0",
@@ -143,7 +143,7 @@
       }
     },
     {
-      "name": "Kasify_Wishlist",
+      "name": "KStack_Wishlist",
       "description": "Customer wishlist stored client-side (localStorage)",
       "status": "active",
       "version": "1.0.0",
@@ -159,7 +159,7 @@
       }
     },
     {
-      "name": "Kasify_Loader",
+      "name": "KStack_Loader",
       "description": "Loading skeletons and spinners for dashboard and storefront route transitions",
       "status": "active",
       "version": "1.0.0",
@@ -182,7 +182,7 @@
       }
     },
     {
-      "name": "Kasify_Email",
+      "name": "KStack_Email",
       "description": "SMTP configuration, editable email templates, transactional emails (order confirmation, shipping, welcome, password reset), email logs and compose from customer panel",
       "status": "active",
       "version": "1.0.0",
@@ -194,7 +194,7 @@
       }
     },
     {
-      "name": "Kasify_AIAssistant",
+      "name": "KStack_AIAssistant",
       "description": "AI-powered product descriptions, customer chatbot that learns from store content, and smart product recommendations",
       "status": "active",
       "version": "1.0.0",
@@ -209,74 +209,74 @@
       }
     },
     {
-      "name": "Kasify_Realtime",
+      "name": "KStack_Realtime",
       "description": "Live inventory updates, real-time purchase notifications and cross-device cart sync via WebSockets",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_SmartCart",
+      "name": "KStack_SmartCart",
       "description": "Upsell and cross-sell suggestions, bundle recommendations and dynamic pricing rules",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_Personalization",
+      "name": "KStack_Personalization",
       "description": "Geo-based content and pricing, behavior-based recommendations and personalized homepages",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_Marketplace",
+      "name": "KStack_Marketplace",
       "description": "Third-party plugin and app marketplace for payments, shipping providers and custom business tools",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_Headless",
+      "name": "KStack_Headless",
       "description": "Public REST/GraphQL API with SDKs for external storefront and multi-platform integration development",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_ShoppableMedia",
+      "name": "KStack_ShoppableMedia",
       "description": "Clickable products in videos, interactive product showcases and social commerce integration",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_FraudDetection",
+      "name": "KStack_FraudDetection",
       "description": "Risk scoring for orders, suspicious activity detection and IP/behavior tracking",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_Automation",
+      "name": "KStack_Automation",
       "description": "Rule-based workflows (IF→THEN), automated emails/notifications and inventory/order triggers",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_MobileAdmin",
+      "name": "KStack_MobileAdmin",
       "description": "Mobile merchant app with push notifications for orders and stock alerts, and on-the-go analytics",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
     },
     {
-      "name": "Kasify_IoT",
+      "name": "KStack_IoT",
       "description": "Smart inventory tracking, device-triggered automation and voice-controlled store management",
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
-    }
+    },
   ]
 }

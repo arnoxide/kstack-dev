@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import type { AppRouter } from "@kasify/api";
+import type { AppRouter } from "@kstack/api";
 import { api } from "@/lib/api";
 
 const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3001";
@@ -55,7 +55,7 @@ interface CustomerAuthContextValue {
 
 const CustomerAuthContext = createContext<CustomerAuthContextValue | null>(null);
 
-const TOKEN_KEY = (tenantId: string) => `kasify_customer_token_${tenantId}`;
+const TOKEN_KEY = (tenantId: string) => `kstack_customer_token_${tenantId}`;
 
 export function CustomerAuthProvider({ tenantId, children }: { tenantId: string; children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);

@@ -1,4 +1,4 @@
-import { integer, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { tenants } from "./tenants";
 
@@ -14,6 +14,8 @@ export const products = pgTable("products", {
     .notNull()
     .default("draft"),
   tags: jsonb("tags").$type<string[]>().notNull().default([]),
+  isRecommended: boolean("is_recommended").notNull().default(false),
+  goesWithIds: jsonb("goes_with_ids").$type<string[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -31,6 +33,7 @@ export const variants = pgTable("variants", {
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   comparePrice: numeric("compare_price", { precision: 10, scale: 2 }),
   inventory: integer("inventory").notNull().default(0),
+  isOnSale: boolean("is_on_sale").notNull().default(false),
   options: jsonb("options").$type<Record<string, string>>().notNull().default({}),
   imageUrl: text("image_url"),
   sortOrder: integer("sort_order").notNull().default(0),

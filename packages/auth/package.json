@@ -1,5 +1,5 @@
 {
-  "name": "@kasify/auth",
+  "name": "@kstack/auth",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
@@ -9,12 +9,12 @@
     "./middleware": "./src/middleware.ts"
   },
   "dependencies": {
-    "@kasify/types": "workspace:*",
+    "@kstack/types": "workspace:*",
     "bcryptjs": "^2.4.3",
     "jose": "^5.9.6"
   },
   "devDependencies": {
-    "@kasify/config": "workspace:*",
+    "@kstack/config": "workspace:*",
     "@types/bcryptjs": "^2.4.6",
     "typescript": "^5.7.3"
   }

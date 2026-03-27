@@ -11,6 +11,8 @@ export const ProductSchema = z.object({
   handle: z.string().min(1).max(255),
   status: ProductStatusSchema,
   tags: z.array(z.string()),
+  isRecommended: z.boolean().default(false),
+  goesWithIds: z.array(z.string()).default([]),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -25,6 +27,7 @@ export const VariantSchema = z.object({
   price: z.number().min(0),
   comparePrice: z.number().min(0).nullable(),
   inventory: z.number().int().min(0),
+  isOnSale: z.boolean().default(false),
   options: z.record(z.string()),
   imageUrl: z.string().url().nullable(),
   createdAt: z.date(),
@@ -37,6 +40,8 @@ export const CreateProductSchema = z.object({
   handle: ProductSchema.shape.handle.optional(),
   status: ProductStatusSchema.default("draft"),
   tags: z.array(z.string()).default([]),
+  isRecommended: z.boolean().default(false),
+  goesWithIds: z.array(z.string()).default([]),
 });
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 
@@ -46,6 +51,7 @@ export const CreateVariantSchema = z.object({
   price: z.number().min(0),
   comparePrice: z.number().min(0).nullable().default(null),
   inventory: z.number().int().min(0).default(0),
+  isOnSale: z.boolean().default(false),
   options: z.record(z.string()).default({}),
   imageUrl: z.string().url().nullable().default(null),
 });

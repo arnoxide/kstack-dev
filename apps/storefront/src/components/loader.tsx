@@ -1,4 +1,4 @@
-// Module: Kasify_Loader
+// Module: KStack_Loader
 
 export function Spinner({ className = "w-6 h-6" }: { className?: string }) {
   return (

@@ -2,7 +2,7 @@
 // The scaffold CLI (tools/scaffold.ts) patches this file when creating a new module.
 
 export interface ModuleDef {
-  /** Full module name e.g. "Kasify_Collections" */
+  /** Full module name e.g. "KStack_Collections" */
   name: string;
   /** Human-readable sidebar/settings label */
   label: string;
@@ -16,92 +16,92 @@ export interface ModuleDef {
 
 /** Modules that can never be disabled */
 const CORE: Set<string> = new Set([
-  "Kasify_Catalog",
-  "Kasify_Orders",
-  "Kasify_Customers",
-  "Kasify_Storefront",
+  "KStack_Catalog",
+  "KStack_Orders",
+  "KStack_Customers",
+  "KStack_Storefront",
 ]);
 
 export const MODULES: ModuleDef[] = [
   {
-    name: "Kasify_Catalog",
+    name: "KStack_Catalog",
     label: "Catalog",
     description: "Products, variants, images and inventory management",
     core: true,
     route: "products",
   },
   {
-    name: "Kasify_Collections",
+    name: "KStack_Collections",
     label: "Collections",
     description: "Product collections and category grouping",
     core: false,
     route: "collections",
   },
   {
-    name: "Kasify_Orders",
+    name: "KStack_Orders",
     label: "Orders",
     description: "Order creation, line items, status and fulfilment",
     core: true,
     route: "orders",
   },
   {
-    name: "Kasify_Customers",
+    name: "KStack_Customers",
     label: "Customers",
     description: "Customer accounts, profiles and authentication",
     core: true,
     route: "customers",
   },
   {
-    name: "Kasify_Coupons",
+    name: "KStack_Coupons",
     label: "Coupons",
     description: "Discount codes — percentage, fixed amount, free shipping",
     core: false,
     route: "coupons",
   },
   {
-    name: "Kasify_Shipping",
+    name: "KStack_Shipping",
     label: "Shipping",
     description: "Shipping rates and methods",
     core: false,
     route: "shipping",
   },
   {
-    name: "Kasify_Reviews",
+    name: "KStack_Reviews",
     label: "Reviews",
     description: "Product reviews submission and admin moderation",
     core: false,
     route: "reviews",
   },
   {
-    name: "Kasify_Storefront",
+    name: "KStack_Storefront",
     label: "Themes & Pages",
     description: "Themes, drag-and-drop page builder and block rendering",
     core: true,
     route: "themes",
   },
   {
-    name: "Kasify_Integrations",
+    name: "KStack_Integrations",
     label: "Integrations",
     description: "Third-party service integrations (payment, analytics, marketing)",
     core: false,
     route: "integrations",
   },
   {
-    name: "Kasify_Analytics",
+    name: "KStack_Analytics",
     label: "Analytics",
     description: "Store analytics: revenue, orders, top products and customer stats",
     core: false,
     route: "analytics",
   },
   {
-    name: "Kasify_Wishlist",
+    name: "KStack_Wishlist",
     label: "Wishlist",
     description: "Customer wishlist stored client-side (localStorage)",
     core: false,
     route: null, // storefront-only, no dashboard page
   },
   {
-    name: "Kasify_Loader",
+    name: "KStack_Loader",
     label: "Loader",
     description: "Loading skeletons and spinners for route transitions",
     core: true,
@@ -110,77 +110,77 @@ export const MODULES: ModuleDef[] = [
 
   // ── Planned modules ──────────────────────────────────────────────────────────
   {
-    name: "Kasify_AIAssistant",
+    name: "KStack_AIAssistant",
     label: "AI Assistant",
     description: "AI product descriptions, customer chatbot and smart recommendations",
     core: false,
     route: "ai-assistant",
   },
   {
-    name: "Kasify_Realtime",
+    name: "KStack_Realtime",
     label: "Real-Time Engine",
     description: "Live inventory, purchase notifications and cross-device cart sync",
     core: false,
     route: null,
   },
   {
-    name: "Kasify_SmartCart",
+    name: "KStack_SmartCart",
     label: "Smart Cart",
     description: "Upsells, cross-sells, bundle recommendations and dynamic pricing",
     core: false,
     route: "smart-cart",
   },
   {
-    name: "Kasify_Personalization",
+    name: "KStack_Personalization",
     label: "Personalization",
     description: "Geo-based pricing, behavior recommendations and personalized homepages",
     core: false,
     route: "personalization",
   },
   {
-    name: "Kasify_Marketplace",
+    name: "KStack_Marketplace",
     label: "App Marketplace",
     description: "Third-party plugin and app marketplace",
     core: false,
     route: "marketplace",
   },
   {
-    name: "Kasify_Headless",
+    name: "KStack_Headless",
     label: "Headless API",
     description: "Public REST/GraphQL API with SDKs for external integrations",
     core: false,
     route: "headless",
   },
   {
-    name: "Kasify_ShoppableMedia",
+    name: "KStack_ShoppableMedia",
     label: "Shoppable Media",
     description: "Clickable products in videos and interactive showcases",
     core: false,
     route: "shoppable-media",
   },
   {
-    name: "Kasify_FraudDetection",
+    name: "KStack_FraudDetection",
     label: "Fraud Detection",
     description: "Risk scoring, suspicious activity detection and IP/behavior tracking",
     core: false,
     route: "fraud-detection",
   },
   {
-    name: "Kasify_Automation",
+    name: "KStack_Automation",
     label: "Automation",
     description: "Rule-based workflows, automated emails and inventory/order triggers",
     core: false,
     route: "automation",
   },
   {
-    name: "Kasify_MobileAdmin",
+    name: "KStack_MobileAdmin",
     label: "Mobile Admin",
     description: "Mobile merchant app with push notifications and on-the-go analytics",
     core: false,
     route: null,
   },
   {
-    name: "Kasify_IoT",
+    name: "KStack_IoT",
     label: "IoT",
     description: "Smart inventory tracking, device-triggered automation and voice control",
     core: false,
@@ -192,7 +192,7 @@ export const MODULES: ModuleDef[] = [
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = (slug: string) => `kasify_disabled_modules_${slug}`;
+const STORAGE_KEY = (slug: string) => `kstack_disabled_modules_${slug}`;
 
 export function getDisabledModules(slug: string): Set<string> {
   if (typeof window === "undefined") return new Set();

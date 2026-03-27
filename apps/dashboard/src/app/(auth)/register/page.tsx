@@ -58,7 +58,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Kasify</h1>
+          <h1 className="text-3xl font-bold text-gray-900">KStack</h1>
           <p className="mt-2 text-gray-600">Create your free online store</p>
         </div>
 
@@ -138,7 +138,7 @@ export default function RegisterPage() {
                     placeholder="my-store"
                   />
                   <span className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-l border-gray-300">
-                    .kasify.com
+                    .zansify.com
                   </span>
                 </div>
               </div>

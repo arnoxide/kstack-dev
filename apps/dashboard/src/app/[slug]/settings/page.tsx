@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import {
   Store,
@@ -32,7 +33,7 @@ const TIMEZONES = [
   "Asia/Dubai", "Australia/Sydney",
 ];
 
-const LOCAL_SETTINGS_KEY = (slug: string) => `kasify_store_config_${slug}`;
+const LOCAL_SETTINGS_KEY = (slug: string) => `kstack_store_config_${slug}`;
 
 interface LocalConfig { currency: string; timezone: string; orderPrefix: string; }
 
@@ -42,6 +43,7 @@ function loadConfig(slug: string): LocalConfig {
 }
 
 export default function SettingsPage() {
+  const confirm = useConfirm();
   const params = useParams<{ slug: string }>();
   const storeUrl = `${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003"}/${params.slug}`;
 
@@ -338,7 +340,7 @@ export default function SettingsPage() {
                       </p>
                       <div className="flex items-center gap-2 bg-gray-50 rounded border border-gray-200 px-3 py-1.5">
                         <code className="text-xs font-mono text-gray-700 flex-1 truncate">
-                          kasify-verify={domain.verificationToken}
+                          kstack-verify={domain.verificationToken}
                         </code>
                         <button
                           onClick={() => copyToken(domain.verificationToken!)}
@@ -356,10 +358,10 @@ export default function SettingsPage() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    if (confirm(`Remove domain ${domain.hostname}?`)) {
-                      removeDomainMutation.mutate({ id: domain.id });
-                    }
+                  onClick={async () => {
+                    const ok = await confirm({ title: "Remove domain", message: `Remove ${domain.hostname} from your store?`, danger: true });
+                    if (!ok) return;
+                    removeDomainMutation.mutate({ id: domain.id });
                   }}
                   disabled={removeDomainMutation.isPending}
                   className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -602,10 +604,10 @@ export default function SettingsPage() {
                 {/* Remove button */}
                 {member.role !== "owner" && (
                   <button
-                    onClick={() => {
-                      if (confirm(`Remove ${member.name} from your team?`)) {
-                        removeMemberMutation.mutate({ muId: member.muId });
-                      }
+                    onClick={async () => {
+                      const ok = await confirm({ title: "Remove team member", message: `Remove ${member.name} from your team?`, danger: true });
+                      if (!ok) return;
+                      removeMemberMutation.mutate({ muId: member.muId });
                     }}
                     disabled={removeMemberMutation.isPending}
                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"

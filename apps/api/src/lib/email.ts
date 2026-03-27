@@ -1,8 +1,8 @@
-// Module: Kasify_Email — core sending utility
+// Module: KStack_Email — core sending utility
 import nodemailer from "nodemailer";
 import { and, eq } from "drizzle-orm";
-import { emailSettings, emailLogs, emailTemplates } from "@kasify/db";
-import type { EmailTemplateType } from "@kasify/db";
+import { emailSettings, emailLogs, emailTemplates } from "@kstack/db";
+import type { EmailTemplateType } from "@kstack/db";
 
 // ── Default HTML templates ────────────────────────────────────────────────────
 

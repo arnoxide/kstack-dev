@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { coupons, couponUsages, customers, integrations, orderLineItems, orders, shippingRates, variants } from "@kasify/db";
+import { coupons, couponUsages, customers, integrations, orderLineItems, orders, shippingRates, variants } from "@kstack/db";
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../trpc";
 import { sendTransactional } from "../lib/email";
 import { LIMITS } from "../lib/rateLimiter";

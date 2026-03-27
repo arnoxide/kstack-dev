@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { integrations, INTEGRATION_PROVIDERS } from "@kasify/db";
+import { integrations, INTEGRATION_PROVIDERS } from "@kstack/db";
 import { protectedProcedure, adminProcedure, router } from "../trpc";
 
 export const integrationsRouter = router({

@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { coupons } from "@kasify/db";
+import { coupons } from "@kstack/db";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../trpc";
 
 export const couponsRouter = router({

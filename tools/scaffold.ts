@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
- * Kasify module scaffold CLI
- * Usage: pnpm kasify module:create <Vendor_ModuleName> [options]
+ * KStack module scaffold CLI
+ * Usage: pnpm kstack module:create <Vendor_ModuleName> [options]
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -54,10 +54,10 @@ function patch(rel: string, transform: (src: string) => string, dryRun: boolean)
 function usage() {
   console.log([
     "",
-    "Kasify Module Scaffold",
+    "KStack Module Scaffold",
     "",
     "Usage:",
-    "  pnpm kasify module:create <Vendor_ModuleName> [options]",
+    "  pnpm kstack module:create <Vendor_ModuleName> [options]",
     "",
     "Options:",
     "  --description <text>   Module description  (default: '<ModuleName> module')",
@@ -68,9 +68,9 @@ function usage() {
     "  --dry-run              Preview changes without writing files",
     "",
     "Examples:",
-    "  pnpm kasify module:create Kasify_Loyalty",
-    "  pnpm kasify module:create Kasify_Blog --description 'Blog posts and articles' --no-schema",
-    "  pnpm kasify module:create Kasify_Referrals --dry-run",
+    "  pnpm kstack module:create KStack_Loyalty",
+    "  pnpm kstack module:create KStack_Blog --description 'Blog posts and articles' --no-schema",
+    "  pnpm kstack module:create KStack_Referrals --dry-run",
     "",
   ].join("\n"));
 }
@@ -84,7 +84,7 @@ if (!rawArgs.length || rawArgs[0] === "--help" || rawArgs[0] === "-h") {
   process.exit(0);
 }
 
-// Accept both:  module:create Kasify_X   OR just  Kasify_X
+// Accept both:  module:create KStack_X   OR just  KStack_X
 let moduleArg: string;
 const argsCopy = [...rawArgs];
 
@@ -102,7 +102,7 @@ if (!moduleArg) {
 }
 
 if (!/^[A-Z][a-zA-Z0-9]*_[A-Z][a-zA-Z0-9]*$/.test(moduleArg)) {
-  console.error(`Error: "${moduleArg}" is not valid. Use Vendor_ModuleName format (e.g., Kasify_Loyalty).\n`);
+  console.error(`Error: "${moduleArg}" is not valid. Use Vendor_ModuleName format (e.g., KStack_Loyalty).\n`);
   process.exit(1);
 }
 
@@ -170,7 +170,7 @@ function apiRouterTemplate(): string {
     `import { TRPCError } from "@trpc/server";`,
     `import { and, eq, asc } from "drizzle-orm";`,
     `import { z } from "zod";`,
-    `// import { ${tableVar} } from "@kasify/db";  // uncomment once schema is added`,
+    `// import { ${tableVar} } from "@kstack/db";  // uncomment once schema is added`,
     `import { protectedProcedure, adminProcedure, router } from "../trpc";`,
     ``,
     `export const ${routerVar} = router({`,

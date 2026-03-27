@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import type { JwtPayload, UserRole } from "@kasify/types";
+import type { JwtPayload, UserRole } from "@kstack/types";
 
 const getSecret = (raw: string) => new TextEncoder().encode(raw);
 
@@ -52,4 +52,31 @@ export async function verifyAccessToken(token: string): Promise<JwtPayload> {
 export async function verifyRefreshToken(token: string): Promise<{ sub: string }> {
   const { payload } = await jwtVerify(token, getSecret(JWT_REFRESH_SECRET));
   return { sub: payload.sub as string };
+}
+
+// ── Platform admin tokens ─────────────────────────────────────────────────────
+
+const PLATFORM_JWT_SECRET = requireSecret(
+  "PLATFORM_JWT_SECRET",
+  "platform-dev-secret-change-in-production-32chars",
+);
+
+export interface PlatformTokenPayload {
+  sub: string;
+  email: string;
+  role: "super_admin" | "admin" | "viewer";
+  scope: "platform";
+}
+
+export async function signPlatformToken(payload: PlatformTokenPayload): Promise<string> {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("8h")
+    .sign(getSecret(PLATFORM_JWT_SECRET));
+}
+
+export async function verifyPlatformToken(token: string): Promise<PlatformTokenPayload> {
+  const { payload } = await jwtVerify(token, getSecret(PLATFORM_JWT_SECRET));
+  return payload as unknown as PlatformTokenPayload;
 }

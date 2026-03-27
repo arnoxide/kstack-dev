@@ -44,11 +44,15 @@ export function checkRateLimit(ip: string, key: string, limit: number, windowMs:
 }
 
 // Pre-configured limiters for common use cases
+const isDev = process.env["NODE_ENV"] !== "production";
+
 export const LIMITS = {
-  /** 10 attempts per 15 minutes — login */
-  auth: (ip: string, key: string) => checkRateLimit(ip, key, 10, 15 * 60 * 1000),
-  /** 5 registrations per hour per IP */
-  register: (ip: string, key: string) => checkRateLimit(ip, key, 5, 60 * 60 * 1000),
+  /** 10 attempts per 15 minutes in prod; relaxed in dev */
+  auth: (ip: string, key: string) =>
+    isDev ? undefined : checkRateLimit(ip, key, 10, 15 * 60 * 1000),
+  /** 5 registrations per hour in prod; relaxed in dev */
+  register: (ip: string, key: string) =>
+    isDev ? undefined : checkRateLimit(ip, key, 5, 60 * 60 * 1000),
   /** 20 lookups per 15 minutes — public order lookup */
   lookup: (ip: string, key: string) => checkRateLimit(ip, key, 20, 15 * 60 * 1000),
 };

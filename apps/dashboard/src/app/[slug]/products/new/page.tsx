@@ -14,6 +14,8 @@ export default function NewProductPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"draft" | "active" | "archived">("draft");
   const [tagsInput, setTagsInput] = useState("");
+  const [isRecommended, setIsRecommended] = useState(false);
+  const [goesWithInput, setGoesWithInput] = useState("");
   const [error, setError] = useState("");
 
   const createMutation = trpc.products.create.useMutation({
@@ -25,13 +27,28 @@ export default function NewProductPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) { setError("Title is required"); return; }
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
     setError("");
     const tags = tagsInput
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    createMutation.mutate({ title: title.trim(), description: description || null, status, tags });
+    const goesWithIds = goesWithInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    createMutation.mutate({
+      title: title.trim(),
+      description: description || null,
+      status,
+      tags,
+      isRecommended,
+      goesWithIds,
+    });
   };
 
   return (
@@ -78,6 +95,37 @@ export default function NewProductPage() {
             />
           </div>
 
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="isRecommended"
+              checked={isRecommended}
+              onChange={(e) => setIsRecommended(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+            />
+            <label htmlFor="isRecommended" className="text-sm font-medium text-gray-700">
+              Show as recommended product
+            </label>
+          </div>
+        </div>
+
+        {/* Merchandising */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <h2 className="font-semibold text-gray-900">Merchandising</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Goes with products <span className="text-gray-400 font-normal">(comma separated IDs)</span>
+            </label>
+            <input
+              type="text"
+              value={goesWithInput}
+              onChange={(e) => setGoesWithInput(e.target.value)}
+              placeholder="e.g. prod_uuid_1, prod_uuid_2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tags <span className="text-gray-400 font-normal">(comma separated)</span>
@@ -99,11 +147,10 @@ export default function NewProductPage() {
             {(["draft", "active", "archived"] as const).map((s) => (
               <label
                 key={s}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-colors ${
-                  status === s
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-colors ${status === s
                     ? "border-gray-900 bg-gray-900 text-white"
                     : "border-gray-200 text-gray-600 hover:border-gray-400"
-                }`}
+                  }`}
               >
                 <input
                   type="radio"

@@ -6,7 +6,8 @@ import { logger } from "hono/logger";
 import { createContext } from "./context";
 import { appRouter } from "./router";
 import { verifyPaystackWebhook } from "./lib/paystack";
-import { db, integrations, orders } from "@kasify/db";
+import { sendTelemetry } from "./lib/telemetry";
+import { db, integrations, orders } from "@kstack/db";
 import { and, eq } from "drizzle-orm";
 
 const app = new Hono();
@@ -15,7 +16,7 @@ const app = new Hono();
 app.use("*", logger());
 const isProd = process.env["NODE_ENV"] === "production";
 const allowedOrigins = [
-  ...(isProd ? [] : ["http://localhost:3002", "http://localhost:3003", "http://localhost:3004"]),
+  ...(isProd ? [] : ["http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:3005"]),
   ...(process.env["ALLOWED_ORIGINS"]?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
 ];
 
@@ -95,6 +96,8 @@ const PORT = Number(process.env["API_PORT"] ?? 3001);
 
 serve({ fetch: app.fetch, port: PORT }, (info) => {
   console.log(`API server running on http://localhost:${info.port}`);
+  // Fire-and-forget — opt out with KSTACK_TELEMETRY=false
+  sendTelemetry();
 });
 
 export type { AppRouter } from "./router";

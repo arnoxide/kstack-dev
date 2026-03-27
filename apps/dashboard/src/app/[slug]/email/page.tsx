@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { trpc } from "@/lib/trpc";
 import {
   Mail,
@@ -33,6 +34,7 @@ const TEMPLATE_LABELS: Record<string, { label: string; desc: string; color: stri
 const VARIABLES = ["{{customer_name}}", "{{store_name}}", "{{order_number}}", "{{order_total}}", "{{order_status}}"];
 
 export default function EmailPage() {
+  const confirm = useConfirm();
   const { slug } = useParams<{ slug: string }>();
   const [tab, setTab] = useState<Tab>("config");
 
@@ -338,7 +340,11 @@ export default function EmailPage() {
                 </button>
                 {!editingTpl.isCustom && (
                   <button
-                    onClick={() => { if (confirm("Reset to default?")) resetTemplate.mutate({ type: editingTpl.type as any }); }}
+                    onClick={async () => {
+                      const ok = await confirm({ title: "Reset template", message: "This will reset the template to the default. Continue?", danger: false });
+                      if (!ok) return;
+                      resetTemplate.mutate({ type: editingTpl.type as any });
+                    }}
                     disabled={resetTemplate.isPending}
                     className="flex items-center gap-2 text-red-500 hover:text-red-700 text-sm px-3 py-2.5">
                     <RefreshCw className="w-4 h-4" /> Reset to default
@@ -396,7 +402,11 @@ export default function EmailPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => { if (confirm(`Delete "${tpl.name}"?`)) deleteTemplate.mutate({ id: tpl.id }); }}
+                      onClick={async () => {
+                        const ok = await confirm({ title: "Delete template", message: `Delete "${tpl.name}"? This cannot be undone.`, danger: true });
+                        if (!ok) return;
+                        deleteTemplate.mutate({ id: tpl.id });
+                      }}
                       className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>

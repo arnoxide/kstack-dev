@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { setAuthState } from "@/lib/auth-store";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,7 +18,8 @@ export default function LoginPage() {
         user: data.user,
         tenant: data.tenant,
       });
-      router.push(`/${data.tenant.slug}`);
+      // Hard navigation so the new page sees the token in localStorage from scratch
+      window.location.href = `/${data.tenant.slug}`;
     },
     onError(err) {
       setError(err.message);
@@ -37,7 +36,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Kasify</h1>
+          <h1 className="text-3xl font-bold text-gray-900">KStack</h1>
           <p className="mt-2 text-gray-600">Sign in to your dashboard</p>
         </div>
 

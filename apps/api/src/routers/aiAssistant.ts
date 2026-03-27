@@ -1,4 +1,4 @@
-// Module: Kasify_AIAssistant
+// Module: KStack_AIAssistant
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
@@ -12,7 +12,7 @@ import {
   variants,
   collections,
   collectionProducts,
-} from "@kasify/db";
+} from "@kstack/db";
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../trpc";
 
 // ─── Provider config ──────────────────────────────────────────────────────────

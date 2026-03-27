@@ -1,5 +1,5 @@
 {
-  "name": "@kasify/db",
+  "name": "@kstack/db",
   "version": "0.0.1",
   "private": true,
   "main": "./src/index.ts",
@@ -21,7 +21,7 @@
     "postgres": "^3.4.5"
   },
   "devDependencies": {
-    "@kasify/config": "workspace:*",
+    "@kstack/config": "workspace:*",
     "drizzle-kit": "^0.30.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"

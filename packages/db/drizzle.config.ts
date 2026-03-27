@@ -5,7 +5,7 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env["DATABASE_URL"] ?? "postgresql://kasify:kasify@localhost:5432/kasify",
+    url: process.env["DATABASE_URL"] ?? "postgresql://kstack:kstack@localhost:5432/kstack",
   },
   verbose: true,
   strict: false,

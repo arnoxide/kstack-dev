@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { hashPassword, signAccessToken, verifyPassword } from "@kasify/auth";
-import { customers, orderLineItems, orders } from "@kasify/db";
+import { hashPassword, signAccessToken, verifyPassword } from "@kstack/auth";
+import { customers, orderLineItems, orders } from "@kstack/db";
 import { publicProcedure, customerProcedure, router } from "../trpc";
 import { LIMITS } from "../lib/rateLimiter";
 

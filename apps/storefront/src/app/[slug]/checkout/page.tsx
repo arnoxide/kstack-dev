@@ -201,7 +201,7 @@ export default function CheckoutPage() {
     }
 
     // Generate unique reference
-    const ref = `kasify_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const ref = `kstack_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     const handler = window.PaystackPop.setup({
       key: paymentConfig.publicKey,

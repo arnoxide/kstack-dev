@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
@@ -29,6 +30,7 @@ function ImageManager({
   images: { id: string; url: string; altText: string | null; sortOrder: number }[];
   onChanged: () => void;
 }) {
+  const confirm = useConfirm();
   const [urlInput, setUrlInput] = useState("");
   const [altInput, setAltInput] = useState("");
   const [urlError, setUrlError] = useState("");
@@ -79,8 +81,10 @@ function ImageManager({
               )}
               {/* Delete overlay */}
               <button
-                onClick={() => {
-                  if (confirm("Remove this image?")) deleteMutation.mutate({ id: img.id });
+                onClick={async () => {
+                  const ok = await confirm({ title: "Remove image", danger: true });
+                  if (!ok) return;
+                  deleteMutation.mutate({ id: img.id });
                 }}
                 disabled={deleteMutation.isPending}
                 className="absolute top-1 right-1 p-1 bg-white/90 hover:bg-red-50 hover:text-red-600 rounded text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -155,10 +159,12 @@ function VariantRow({
     price: string | number;
     comparePrice: string | number | null;
     inventory: number;
+    isOnSale: boolean;
   };
   onDelete: (id: string) => void;
   onSaved: () => void;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(variant.title);
   const [sku, setSku] = useState(variant.sku ?? "");
@@ -167,6 +173,7 @@ function VariantRow({
     variant.comparePrice != null ? String(variant.comparePrice) : "",
   );
   const [inventory, setInventory] = useState(String(variant.inventory));
+  const [isOnSale, setIsOnSale] = useState(variant.isOnSale);
 
   const updateMutation = trpc.products.updateVariant.useMutation({
     onSuccess: () => { setEditing(false); onSaved(); },
@@ -197,6 +204,11 @@ function VariantRow({
         <div className="text-sm text-gray-600 w-20 text-right">
           {variant.inventory} in stock
         </div>
+        <div className="w-16 flex justify-center">
+          {variant.isOnSale && (
+            <span className="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Sale</span>
+          )}
+        </div>
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
           <button
             onClick={() => setEditing(true)}
@@ -205,8 +217,10 @@ function VariantRow({
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => {
-              if (confirm("Delete this variant?")) deleteMutation.mutate({ id: variant.id });
+            onClick={async () => {
+              const ok = await confirm({ title: "Delete variant", danger: true });
+              if (!ok) return;
+              deleteMutation.mutate({ id: variant.id });
             }}
             disabled={deleteMutation.isPending}
             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -272,6 +286,16 @@ function VariantRow({
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
         </div>
+        <div className="flex items-center gap-2 pt-5">
+          <input
+            type="checkbox"
+            id={`sale-${variant.id}`}
+            checked={isOnSale}
+            onChange={(e) => setIsOnSale(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+          />
+          <label htmlFor={`sale-${variant.id}`} className="text-xs font-medium text-gray-700">On Sale</label>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -284,6 +308,7 @@ function VariantRow({
                 price: Number(price),
                 comparePrice: comparePrice ? Number(comparePrice) : null,
                 inventory: parseInt(inventory, 10),
+                isOnSale,
               },
             })
           }
@@ -294,7 +319,7 @@ function VariantRow({
           Save variant
         </button>
         <button
-          onClick={() => { setEditing(false); setTitle(variant.title); setSku(variant.sku ?? ""); setPrice(String(variant.price)); }}
+          onClick={() => { setEditing(false); setTitle(variant.title); setSku(variant.sku ?? ""); setPrice(String(variant.price)); setIsOnSale(variant.isOnSale); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <X className="w-3 h-3" />
@@ -320,6 +345,7 @@ function AddVariantForm({
   const [price, setPrice] = useState("");
   const [comparePrice, setComparePrice] = useState("");
   const [inventory, setInventory] = useState("0");
+  const [isOnSale, setIsOnSale] = useState(false);
 
   const createMutation = trpc.products.createVariant.useMutation({
     onSuccess: () => { onAdded(); setTitle(""); setSku(""); setPrice(""); setComparePrice(""); setInventory("0"); },
@@ -382,6 +408,16 @@ function AddVariantForm({
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
         </div>
+        <div className="flex items-center gap-2 pt-5">
+          <input
+            type="checkbox"
+            id="new-sale"
+            checked={isOnSale}
+            onChange={(e) => setIsOnSale(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+          />
+          <label htmlFor="new-sale" className="text-xs font-medium text-gray-700">On Sale</label>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -395,6 +431,7 @@ function AddVariantForm({
                 price: Number(price),
                 comparePrice: comparePrice ? Number(comparePrice) : null,
                 inventory: parseInt(inventory, 10),
+                isOnSale,
               },
             });
           }}
@@ -417,6 +454,7 @@ function AddVariantForm({
 
 // ─── Main edit page ───────────────────────────────────────────────────────────
 export default function EditProductPage() {
+  const confirm = useConfirm();
   const params = useParams<{ slug: string; id: string }>();
   const router = useRouter();
   const storefrontBase = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003";
@@ -427,6 +465,8 @@ export default function EditProductPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"draft" | "active" | "archived">("draft");
   const [tagsInput, setTagsInput] = useState("");
+  const [isRecommended, setIsRecommended] = useState(false);
+  const [goesWithInput, setGoesWithInput] = useState("");
   const [showAddVariant, setShowAddVariant] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -437,6 +477,8 @@ export default function EditProductPage() {
       setDescription(product.description ?? "");
       setStatus(product.status);
       setTagsInput((product.tags ?? []).join(", "));
+      setIsRecommended(product.isRecommended);
+      setGoesWithInput((product.goesWithIds ?? []).join(", "));
     }
   }, [product]);
 
@@ -456,9 +498,17 @@ export default function EditProductPage() {
   const handleSave = () => {
     setError("");
     const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    const goesWithIds = goesWithInput.split(",").map((t) => t.trim()).filter(Boolean);
     updateMutation.mutate({
       id: params.id,
-      data: { title: title.trim(), description: description || null, status, tags },
+      data: {
+        title: title.trim(),
+        description: description || null,
+        status,
+        tags,
+        isRecommended,
+        goesWithIds,
+      },
     });
   };
 
@@ -540,6 +590,37 @@ export default function EditProductPage() {
             />
           </div>
 
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="isRecommended"
+              checked={isRecommended}
+              onChange={(e) => setIsRecommended(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+            />
+            <label htmlFor="isRecommended" className="text-sm font-medium text-gray-700">
+              Show as recommended product
+            </label>
+          </div>
+        </div>
+
+        {/* Merchandising */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <h2 className="font-semibold text-gray-900">Merchandising</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Goes with products <span className="text-gray-400 font-normal">(comma separated IDs)</span>
+            </label>
+            <input
+              type="text"
+              value={goesWithInput}
+              onChange={(e) => setGoesWithInput(e.target.value)}
+              placeholder="e.g. prod_uuid_1, prod_uuid_2"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tags <span className="text-gray-400 font-normal">(comma separated)</span>
@@ -561,11 +642,10 @@ export default function EditProductPage() {
             {(["draft", "active", "archived"] as const).map((s) => (
               <label
                 key={s}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-colors ${
-                  status === s
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-200 text-gray-600 hover:border-gray-400"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-colors ${status === s
+                  ? "border-gray-900 bg-gray-900 text-white"
+                  : "border-gray-200 text-gray-600 hover:border-gray-400"
+                  }`}
               >
                 <input type="radio" name="status" value={s} checked={status === s} onChange={() => setStatus(s)} className="sr-only" />
                 <span className="capitalize">{s}</span>
@@ -609,6 +689,7 @@ export default function EditProductPage() {
                 <div className="w-24 text-right">Price</div>
                 <div className="w-24 text-right hidden sm:block">Compare</div>
                 <div className="w-20 text-right">Stock</div>
+                <div className="w-16 text-center">Sale</div>
                 <div className="w-16" />
               </div>
               {product.variants.map((v) => (
@@ -656,10 +737,10 @@ export default function EditProductPage() {
           </button>
 
           <button
-            onClick={() => {
-              if (confirm("Delete this product? This cannot be undone.")) {
-                deleteMutation.mutate({ id: params.id });
-              }
+            onClick={async () => {
+              const ok = await confirm({ title: "Delete product", message: "This cannot be undone.", danger: true });
+              if (!ok) return;
+              deleteMutation.mutate({ id: params.id });
             }}
             disabled={deleteMutation.isPending}
             className="flex items-center gap-2 text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"

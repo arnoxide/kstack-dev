@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, asc, min } from "drizzle-orm";
+import { and, eq, asc, min, desc } from "drizzle-orm";
 import { z } from "zod";
 import {
   collections,
@@ -12,7 +12,8 @@ import {
   tenants,
   themes,
   variants,
-} from "@kasify/db";
+} from "@kstack/db";
+
 import { publicProcedure, router } from "../trpc";
 
 /**
@@ -265,4 +266,5 @@ export const publicRouter = router({
         .limit(1);
       return page ?? null;
     }),
+
 });

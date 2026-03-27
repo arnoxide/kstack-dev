@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { pages, themes } from "@kasify/db";
+import { pages, themes } from "@kstack/db";
 import { protectedProcedure, adminProcedure, router } from "../trpc";
 
 export const storefrontRouter = router({

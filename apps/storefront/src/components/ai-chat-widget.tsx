@@ -1,10 +1,10 @@
 "use client";
-// Module: Kasify_AIAssistant
+// Module: KStack_AIAssistant
 
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Bot, Minimize2 } from "lucide-react";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import type { AppRouter } from "@kasify/api/router";
+import type { AppRouter } from "@kstack/api/router";
 
 const API_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3001";
 
@@ -17,7 +17,7 @@ interface Message {
   content: string;
 }
 
-const SESSION_KEY = (tenantId: string) => `kasify_ai_session_${tenantId}`;
+const SESSION_KEY = (tenantId: string) => `kstack_ai_session_${tenantId}`;
 
 export function AIChatWidget({ tenantId, shopSlug }: { tenantId: string; shopSlug: string }) {
   const [enabled, setEnabled] = useState(false);

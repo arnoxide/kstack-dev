@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
   FolderOpen,
   Plus,
@@ -32,6 +33,7 @@ function CollectionList({
   onSelect: (id: string) => void;
   onNew: () => void;
 }) {
+  const confirm = useConfirm();
   const { data: collections, isLoading, refetch } = trpc.collections.list.useQuery();
   const deleteMutation = trpc.collections.delete.useMutation({ onSuccess: () => refetch() });
 
@@ -114,8 +116,10 @@ function CollectionList({
                         <Pencil className="w-3.5 h-3.5" /> Manage
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete "${col.title}"?`)) deleteMutation.mutate({ id: col.id });
+                        onClick={async () => {
+                          const ok = await confirm({ title: "Delete collection", message: `Delete "${col.title}"?`, danger: true });
+                          if (!ok) return;
+                          deleteMutation.mutate({ id: col.id });
                         }}
                         className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >

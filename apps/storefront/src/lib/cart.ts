@@ -15,7 +15,7 @@ export interface Cart {
   tenantId: string;
 }
 
-const KEY = (tenantId: string) => `kasify_cart_${tenantId}`;
+const KEY = (tenantId: string) => `kstack_cart_${tenantId}`;
 
 export function getCart(tenantId: string): Cart {
   if (typeof window === "undefined") return { items: [], tenantId };

@@ -1,4 +1,4 @@
-# Kasify
+# KStack
 
 A modern, open-source multi-tenant e-commerce platform. Merchants create and manage online stores with full customization freedom — drag-and-drop page builder, raw HTML/CSS/JS code editor, product management, order tracking, and payment processing.
 
@@ -15,10 +15,10 @@ Built as a TypeScript monorepo with Turborepo, tRPC, Next.js 15, Hono, Drizzle O
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
 - [Packages](#packages)
-  - [@kasify/db](#kasifydb)
-  - [@kasify/auth](#kasifyauth)
-  - [@kasify/types](#kasifytypes)
-  - [@kasify/config](#kasifyconfig)
+  - [@kstack/db](#kstackdb)
+  - [@kstack/auth](#kstackauth)
+  - [@kstack/types](#kstacktypes)
+  - [@kstack/config](#kstackconfig)
 - [Apps](#apps)
   - [API (`apps/api`)](#api-appsapi)
   - [Dashboard (`apps/dashboard`)](#dashboard-appsdashboard)
@@ -38,9 +38,9 @@ Built as a TypeScript monorepo with Turborepo, tRPC, Next.js 15, Hono, Drizzle O
 
 ## Overview
 
-Kasify lets anyone create a fully functional online store with:
+KStack lets anyone create a fully functional online store with:
 
-- A subdomain out of the box (`yourshop.kasify.com`)
+- A subdomain out of the box (`yourshop.zansify.com`)
 - Custom domain support with automatic SSL
 - Drag-and-drop page builder (Craft.js — planned)
 - Raw HTML/CSS/JS code editor for unlimited customization (planned)
@@ -61,8 +61,8 @@ Kasify lets anyone create a fully functional online store with:
                        │
 ┌──────────────────────▼──────────────────────────┐
 │         apps/gateway  (Hono — planned)           │
-│  Resolves *.kasify.com hostname → tenant         │
-│  Injects X-Kasify-Tenant-ID header               │
+│  Resolves *.zansify.com hostname → tenant         │
+│  Injects X-KStack-Tenant-ID header               │
 └──────┬─────────────────────────────┬────────────┘
        │                             │
 ┌──────▼──────┐             ┌────────▼──────────┐
@@ -104,7 +104,7 @@ apps/worker     →  BullMQ background jobs     (planned)
 ## Project Structure
 
 ```
-kasify/
+kstack/
 ├── apps/
 │   ├── api/                    # Hono + tRPC API server (port 3001)
 │   │   └── src/
@@ -199,8 +199,8 @@ kasify/
 ### 1. Clone and install dependencies
 
 ```bash
-git clone <repo-url> kasify
-cd kasify
+git clone <repo-url> kstack
+cd kstack
 pnpm install
 ```
 
@@ -257,7 +257,7 @@ Open **http://localhost:3002/register** and fill in:
 - Email address
 - Password (min 8 characters)
 - Shop name (e.g. "My Awesome Store")
-- Shop URL slug (e.g. `my-store` → `my-store.kasify.com`)
+- Shop URL slug (e.g. `my-store` → `my-store.zansify.com`)
 
 You'll be taken straight to your dashboard at `http://localhost:3002/my-store`.
 
@@ -267,7 +267,7 @@ You'll be taken straight to your dashboard at `http://localhost:3002/my-store`.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://kasify:kasify@localhost:5432/kasify` | PostgreSQL connection string |
+| `DATABASE_URL` | `postgresql://kstack:kstack@localhost:5432/kstack` | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
 | `JWT_SECRET` | *(must set)* | Secret for signing access tokens (min 32 chars) |
 | `JWT_REFRESH_SECRET` | *(must set)* | Secret for signing refresh tokens (min 32 chars) |
@@ -275,23 +275,23 @@ You'll be taken straight to your dashboard at `http://localhost:3002/my-store`.
 | `API_PORT` | `3001` | Port for the API server |
 | `GATEWAY_PORT` | `3000` | Port for the gateway proxy |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | API URL used by the dashboard |
-| `NEXT_PUBLIC_BASE_DOMAIN` | `kasify.localhost` | Base domain for tenant subdomains |
+| `NEXT_PUBLIC_BASE_DOMAIN` | `zansify.localhost` | Base domain for tenant subdomains |
 | `STORAGE_ENDPOINT` | — | S3-compatible storage endpoint (Cloudflare R2) |
 | `STORAGE_ACCESS_KEY_ID` | — | Storage access key |
 | `STORAGE_SECRET_ACCESS_KEY` | — | Storage secret key |
-| `STORAGE_BUCKET` | `kasify-dev` | Storage bucket name |
+| `STORAGE_BUCKET` | `kstack-dev` | Storage bucket name |
 | `STORAGE_PUBLIC_URL` | — | Public CDN URL for stored assets |
 | `STRIPE_SECRET_KEY` | — | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | — | Stripe publishable key (client-side) |
 | `RESEND_API_KEY` | — | Resend API key for transactional email |
-| `EMAIL_FROM` | `noreply@kasify.com` | From address for emails |
+| `EMAIL_FROM` | `noreply@zansify.com` | From address for emails |
 
 ---
 
 ## Packages
 
-### @kasify/db
+### @kstack/db
 
 Drizzle ORM schema definitions, database client, and migration tooling.
 
@@ -303,7 +303,7 @@ Drizzle ORM schema definitions, database client, and migration tooling.
 **Usage:**
 
 ```typescript
-import { db, products, eq } from "@kasify/db";
+import { db, products, eq } from "@kstack/db";
 
 const rows = await db.select().from(products).where(eq(products.tenantId, id));
 ```
@@ -319,14 +319,14 @@ pnpm db:studio     # Open Drizzle Studio visual editor at localhost:4983
 
 ---
 
-### @kasify/auth
+### @kstack/auth
 
 JWT token management, password hashing, and Hono middleware.
 
 **JWT functions:**
 
 ```typescript
-import { signAccessToken, signRefreshToken, verifyAccessToken } from "@kasify/auth";
+import { signAccessToken, signRefreshToken, verifyAccessToken } from "@kstack/auth";
 
 // Sign tokens
 const accessToken = await signAccessToken({ sub, email, tenantId, role });  // 15min TTL
@@ -339,7 +339,7 @@ const payload = await verifyAccessToken(token);   // throws if invalid/expired
 **Password functions:**
 
 ```typescript
-import { hashPassword, verifyPassword } from "@kasify/auth";
+import { hashPassword, verifyPassword } from "@kstack/auth";
 
 const hash = await hashPassword("mypassword");          // bcrypt, 12 rounds
 const valid = await verifyPassword("mypassword", hash); // boolean
@@ -348,7 +348,7 @@ const valid = await verifyPassword("mypassword", hash); // boolean
 **Hono middleware:**
 
 ```typescript
-import { requireAuth, requireAdminRole } from "@kasify/auth";
+import { requireAuth, requireAdminRole } from "@kstack/auth";
 
 app.get("/protected", requireAuth, (c) => {
   const user = c.get("user"); // JwtPayload
@@ -362,38 +362,38 @@ app.delete("/admin-only", requireAuth, requireAdminRole, (c) => {
 
 ---
 
-### @kasify/types
+### @kstack/types
 
 Shared Zod schemas and TypeScript types used across all apps and packages.
 
 **Tenant types:**
 ```typescript
-import { TenantSchema, CreateTenantSchema, TenantPlan } from "@kasify/types";
+import { TenantSchema, CreateTenantSchema, TenantPlan } from "@kstack/types";
 // TenantPlan: "free" | "starter" | "pro" | "enterprise"
 ```
 
 **Auth types:**
 ```typescript
-import { RegisterSchema, LoginSchema, JwtPayload, UserRole } from "@kasify/types";
+import { RegisterSchema, LoginSchema, JwtPayload, UserRole } from "@kstack/types";
 // UserRole: "owner" | "admin" | "staff"
 ```
 
 **Product types:**
 ```typescript
-import { CreateProductSchema, CreateVariantSchema, ProductStatus } from "@kasify/types";
+import { CreateProductSchema, CreateVariantSchema, ProductStatus } from "@kstack/types";
 // ProductStatus: "draft" | "active" | "archived"
 ```
 
 **Order types:**
 ```typescript
-import { OrderSchema, AddressSchema, OrderStatus, FinancialStatus } from "@kasify/types";
+import { OrderSchema, AddressSchema, OrderStatus, FinancialStatus } from "@kstack/types";
 // OrderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded"
 // FinancialStatus: "pending" | "paid" | "refunded" | "partially_refunded" | "failed"
 ```
 
 **Builder types:**
 ```typescript
-import { PageSchema, ThemeSchema, CustomCodeSchema, PageType } from "@kasify/types";
+import { PageSchema, ThemeSchema, CustomCodeSchema, PageType } from "@kstack/types";
 // PageType: "home" | "product" | "collection" | "blog" | "custom" | "404"
 // Theme.settings: { primaryColor, secondaryColor, accentColor, fontHeading, fontBody, borderRadius }
 // Page.mode: "visual" | "code"
@@ -403,12 +403,12 @@ import { PageSchema, ThemeSchema, CustomCodeSchema, PageType } from "@kasify/typ
 
 ---
 
-### @kasify/config
+### @kstack/config
 
 Shared base configurations.
 
-- `@kasify/config/tsconfig` — TypeScript base config (strict, noUncheckedIndexedAccess)
-- `@kasify/config/tailwind` — Tailwind base theme (CSS variable colors, border radius)
+- `@kstack/config/tsconfig` — TypeScript base config (strict, noUncheckedIndexedAccess)
+- `@kstack/config/tailwind` — Tailwind base theme (CSS variable colors, border radius)
 
 ---
 
@@ -464,7 +464,7 @@ Next.js 15 merchant admin SPA. All routes are under `/{shopSlug}/`.
 
 1. User submits login/register form
 2. tRPC mutation fires to `http://localhost:3001/trpc/auth.login`
-3. On success, `{ accessToken, refreshToken, user, tenant }` stored in `localStorage` under key `kasify_auth`
+3. On success, `{ accessToken, refreshToken, user, tenant }` stored in `localStorage` under key `kstack_auth`
 4. Every subsequent tRPC request reads the access token from `localStorage` and attaches it as `Authorization: Bearer <token>` header
 5. Logout clears localStorage and redirects to `/login`
 
@@ -473,7 +473,7 @@ Next.js 15 merchant admin SPA. All routes are under `/{shopSlug}/`.
 ### Storefront (`apps/storefront`) — Planned
 
 Next.js 15 SSR app that renders any tenant's shop. Will be powered by:
-- Gateway-injected `X-Kasify-Tenant-ID` request header for tenant resolution
+- Gateway-injected `X-KStack-Tenant-ID` request header for tenant resolution
 - `pages.content` (Craft.js JSON) hydrated into React components in read-only mode
 - `pages.customCode` rendered inside a sandboxed `<iframe>` with strict CSP
 - Per-tenant `unstable_cache` with 60s revalidation for product/collection pages
@@ -498,11 +498,11 @@ Full-screen collaborative page editor.
 Hono reverse proxy that handles tenant resolution and routing.
 
 **Request flow:**
-1. Incoming request arrives at `*.kasify.com` or a custom domain
+1. Incoming request arrives at `*.zansify.com` or a custom domain
 2. Gateway reads `Host` header
-3. If `*.kasify.com` — extracts slug, looks up `tenants` table (Redis cache → Postgres, 5min TTL)
+3. If `*.zansify.com` — extracts slug, looks up `tenants` table (Redis cache → Postgres, 5min TTL)
 4. If custom domain — looks up `domains` table for verified hostname → tenant
-5. Injects `X-Kasify-Tenant-ID` and `X-Kasify-Tenant-Slug` headers
+5. Injects `X-KStack-Tenant-ID` and `X-KStack-Tenant-Slug` headers
 6. Proxies request to `apps/storefront`
 
 ---
@@ -531,7 +531,7 @@ The root of every store.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `slug` | text | Unique, used in subdomain (`slug.kasify.com`) |
+| `slug` | text | Unique, used in subdomain (`slug.zansify.com`) |
 | `name` | text | Display name |
 | `plan` | enum | `free \| starter \| pro \| enterprise` |
 | `email` | text | Billing/contact email |
@@ -913,7 +913,7 @@ Returns all custom domains registered for the tenant.
 
 **Input:** `{ hostname: string }`
 
-Creates a domain record with a `verificationToken`. The merchant must add a DNS TXT record `_kasify-verify=<token>` to verify ownership.
+Creates a domain record with a `verificationToken`. The merchant must add a DNS TXT record `_kstack-verify=<token>` to verify ownership.
 
 ---
 
@@ -1016,7 +1016,7 @@ Deactivates all other themes and activates the specified one.
 
 ### Token Strategy
 
-Kasify uses a dual-token JWT strategy:
+KStack uses a dual-token JWT strategy:
 
 - **Access token** — Short-lived (15 minutes), signed with `JWT_SECRET`, sent as `Authorization: Bearer <token>` on every request. Never stored in a cookie.
 - **Refresh token** — Long-lived (30 days), stored server-side as a SHA-256 hash in `refresh_tokens`. The raw token is sent to the client once and stored in `localStorage`. Used only to obtain new access tokens via `auth.refresh`.
@@ -1034,7 +1034,7 @@ If a refresh token is presented that has already been revoked, it may indicate t
 
 ### Frontend Storage
 
-Auth state is persisted to `localStorage` under the key `kasify_auth`:
+Auth state is persisted to `localStorage` under the key `kstack_auth`:
 
 ```typescript
 {
@@ -1091,10 +1091,10 @@ In Hono middleware:
 pnpm dev
 
 # Start only the API
-pnpm --filter=@kasify/api dev
+pnpm --filter=@kstack/api dev
 
 # Start only the dashboard
-pnpm --filter=@kasify/dashboard dev
+pnpm --filter=@kstack/dashboard dev
 
 # Build all packages
 pnpm build
@@ -1141,10 +1141,10 @@ docker compose -f infra/docker-compose.yml down -v  # Stop + delete all data
 
 ### DNS setup
 
-1. Point `*.kasify.com` as a wildcard CNAME to the gateway
+1. Point `*.zansify.com` as a wildcard CNAME to the gateway
 2. Enable Cloudflare proxy on the wildcard record for SSL termination
-3. Merchants add a CNAME for their custom domain pointing to `shops.kasify.com`
-4. The domain verification worker checks for a DNS TXT record `_kasify-verify=<token>`
+3. Merchants add a CNAME for their custom domain pointing to `shops.zansify.com`
+4. The domain verification worker checks for a DNS TXT record `_kstack-verify=<token>`
 
 ### Required environment variables for production
 
@@ -1213,4 +1213,4 @@ docker compose -f infra/docker-compose.yml down -v  # Stop + delete all data
 ## License
 
 MIT
-# kasify
+# kstack

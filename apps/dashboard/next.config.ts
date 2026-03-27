@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@kasify/types"],
+  transpilePackages: ["@kstack/types"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**.r2.dev" },

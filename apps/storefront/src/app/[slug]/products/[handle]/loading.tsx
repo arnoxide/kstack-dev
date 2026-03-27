@@ -1,4 +1,4 @@
-// Module: Kasify_Loader
+// Module: KStack_Loader
 import { ProductDetailSkeleton } from "@/components/loader";
 
 export default function Loading() {

@@ -1,4 +1,4 @@
-// Module: Kasify_Email
+// Module: KStack_Email
 import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { tenants } from "./tenants";

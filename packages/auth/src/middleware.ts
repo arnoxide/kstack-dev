@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
 import { verifyAccessToken } from "./jwt";
-import type { JwtPayload } from "@kasify/types";
+import type { JwtPayload } from "@kstack/types";
 
 declare module "hono" {
   interface ContextVariableMap {

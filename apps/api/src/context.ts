@@ -1,7 +1,7 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import { verifyAccessToken } from "@kasify/auth";
-import { db } from "@kasify/db";
-import type { JwtPayload } from "@kasify/types";
+import { verifyAccessToken } from "@kstack/auth";
+import { db } from "@kstack/db";
+import type { JwtPayload } from "@kstack/types";
 
 export interface Context {
   db: typeof db;
@@ -16,15 +16,14 @@ export async function createContext(opts: FetchCreateContextFnOptions): Promise<
     opts.req.headers.get("x-real-ip") ??
     "unknown";
 
-  const authHeader = opts.req.headers.get("Authorization");
   let user: JwtPayload | null = null;
+  const authHeader = opts.req.headers.get("Authorization");
 
   if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
     try {
-      user = await verifyAccessToken(token);
+      user = await verifyAccessToken(authHeader.slice(7));
     } catch {
-      // token invalid — user stays null
+      // invalid token
     }
   }
 

@@ -8,7 +8,7 @@ export interface WishlistItem {
   minPrice: number | null;
 }
 
-const KEY = (tenantId: string) => `kasify_wishlist_${tenantId}`;
+const KEY = (tenantId: string) => `kstack_wishlist_${tenantId}`;
 
 export function getWishlist(tenantId: string): WishlistItem[] {
   if (typeof window === "undefined") return [];

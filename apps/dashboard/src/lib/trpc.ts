@@ -1,6 +1,6 @@
 "use client";
 
 import { createTRPCReact } from "@trpc/react-query";
-import type { AppRouter } from "@kasify/api";
+import type { AppRouter } from "@kstack/api";
 
 export const trpc = createTRPCReact<AppRouter>();

@@ -17,7 +17,7 @@ import {
 } from "./schema/index";
 
 const connectionString =
-  process.env["DATABASE_URL"] ?? "postgresql://kasify:kasify@localhost:5432/kasify";
+  process.env["DATABASE_URL"] ?? "postgresql://kstack:kstack@localhost:5432/kstack";
 
 const client = postgres(connectionString, { max: 1 });
 const db = drizzle(client, { schema });
@@ -254,12 +254,12 @@ async function seed() {
     .values({
       slug: DEMO_SLUG,
       name: "Demo Store",
-      email: "demo@kasify.dev",
+      email: "demo@zansify.com",
       plan: "pro",
     })
     .onConflictDoUpdate({
       target: tenants.slug,
-      set: { name: "Demo Store", email: "demo@kasify.dev" },
+      set: { name: "Demo Store", email: "demo@zansify.com" },
     })
     .returning();
   const tenantId = tenant.id;

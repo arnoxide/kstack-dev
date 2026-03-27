@@ -12,7 +12,7 @@ export function ShopFooter({ shop }: ShopFooterProps) {
         <p>
           Powered by{" "}
           <a href="/" className="font-medium text-gray-700 hover:text-gray-900">
-            Kasify
+            KStack
           </a>
         </p>
       </div>
