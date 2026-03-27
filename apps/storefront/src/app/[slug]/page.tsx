@@ -20,7 +20,7 @@ export default async function ShopHomePage({ params }: { params: Promise<{ slug:
   ]);
 
   // If a published home page with blocks exists, render it via BlockRenderer
-  type PageContent = { blocks?: unknown[] };
+  type PageContent = { blocks?: Array<{ type: string }> };
   const pageContent = homePage?.content as PageContent | null;
   const hasBuilderContent =
     homePage &&
@@ -29,13 +29,36 @@ export default async function ShopHomePage({ params }: { params: Promise<{ slug:
     pageContent.blocks.length > 0;
 
   if (hasBuilderContent) {
+    const blocks = pageContent!.blocks as Parameters<typeof BlockRenderer>[0]["blocks"];
+    // Check if the merchant explicitly added a products/collections block
+    const hasProductBlock = (pageContent!.blocks as Array<{ type: string }>).some(
+      (b) => b.type === "featured_products" || b.type === "collection_grid",
+    );
+
     return (
-      <BlockRenderer
-        blocks={pageContent!.blocks as Parameters<typeof BlockRenderer>[0]["blocks"]}
-        slug={slug}
-        products={products}
-        collections={collections}
-      />
+      <div>
+        <BlockRenderer blocks={blocks} slug={slug} products={products} collections={collections} />
+
+        {/* Always show products below builder content if no product block was added */}
+        {!hasProductBlock && products.length > 0 && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-16">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
+              <Link
+                href={`/${slug}/products`}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4"
+              >
+                View all
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} slug={slug} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     );
   }
 
