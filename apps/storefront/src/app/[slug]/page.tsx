@@ -113,8 +113,33 @@ export default async function ShopHomePage({ params }: { params: Promise<{ slug:
       )}
 
       {products.length === 0 && (
-        <section className="max-w-7xl mx-auto px-6 py-24 text-center">
-          <p className="text-gray-500 text-lg">No products yet. Check back soon!</p>
+        <section className="max-w-2xl mx-auto px-6 py-24 text-center">
+          {/* Animated dots */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="w-2.5 h-2.5 rounded-full bg-gray-300"
+                style={{ animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite` }}
+              />
+            ))}
+          </div>
+
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">
+            Something exciting is coming
+          </h2>
+          <p className="text-gray-500 text-lg mb-2">
+            {shop.tenant.name} is stocking up. Our products will be live very soon.
+          </p>
+          <p className="text-gray-400 text-sm mb-10">
+            Bookmark this page and be the first to shop when we launch.
+          </p>
+
+          {/* Share row */}
+          <div className="inline-flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-full px-5 py-2.5 text-sm text-gray-600">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+            Store is live — products dropping soon
+          </div>
         </section>
       )}
     </div>

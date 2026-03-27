@@ -45,7 +45,10 @@ function loadConfig(slug: string): LocalConfig {
 export default function SettingsPage() {
   const confirm = useConfirm();
   const params = useParams<{ slug: string }>();
-  const storeUrl = `${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003"}/${params.slug}`;
+  const rootDomain = process.env["NEXT_PUBLIC_ROOT_DOMAIN"];
+  const storeUrl = rootDomain
+    ? `https://${params.slug}.${rootDomain}`
+    : `http://localhost:3003/${params.slug}`;
 
   // ── Store config (local for now) ─────────────────────────────────────────
   const [currency, setCurrency] = useState("ZAR");

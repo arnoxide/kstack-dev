@@ -55,11 +55,15 @@ export async function verifyRefreshToken(token: string): Promise<{ sub: string }
 }
 
 // ── Platform admin tokens ─────────────────────────────────────────────────────
+// PLATFORM_JWT_SECRET is resolved lazily so that @kstack/api can import this
+// package without needing the var — only zansify-api uses these functions.
 
-const PLATFORM_JWT_SECRET = requireSecret(
-  "PLATFORM_JWT_SECRET",
-  "platform-dev-secret-change-in-production-32chars",
-);
+function getPlatformSecret(): string {
+  return requireSecret(
+    "PLATFORM_JWT_SECRET",
+    "platform-dev-secret-change-in-production-32chars",
+  );
+}
 
 export interface PlatformTokenPayload {
   sub: string;
@@ -73,10 +77,10 @@ export async function signPlatformToken(payload: PlatformTokenPayload): Promise<
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("8h")
-    .sign(getSecret(PLATFORM_JWT_SECRET));
+    .sign(getSecret(getPlatformSecret()));
 }
 
 export async function verifyPlatformToken(token: string): Promise<PlatformTokenPayload> {
-  const { payload } = await jwtVerify(token, getSecret(PLATFORM_JWT_SECRET));
+  const { payload } = await jwtVerify(token, getSecret(getPlatformSecret()));
   return payload as unknown as PlatformTokenPayload;
 }

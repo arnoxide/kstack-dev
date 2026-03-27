@@ -11,8 +11,8 @@ export function ShopFooter({ shop }: ShopFooterProps) {
         </p>
         <p>
           Powered by{" "}
-          <a href="/" className="font-medium text-gray-700 hover:text-gray-900">
-            KStack
+          <a href="https://zansify.com" className="font-medium text-gray-700 hover:text-gray-900">
+            Zansify
           </a>
         </p>
       </div>

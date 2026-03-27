@@ -277,6 +277,6 @@
       "status": "planned",
       "version": "0.0.0",
       "files": { "router": null, "dashboard": null, "storefront": [], "schema": null }
-    },
+    }
   ]
 }

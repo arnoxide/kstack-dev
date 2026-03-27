@@ -57,8 +57,12 @@ export default function DashboardOverviewPage() {
     },
   ];
 
-  const storeUrl = `${process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "http://localhost:3003"}/${params.slug}`;
+  const rootDomain = process.env["NEXT_PUBLIC_ROOT_DOMAIN"];
+  const storeUrl = rootDomain
+    ? `https://${params.slug}.${rootDomain}`
+    : `http://localhost:3003/${params.slug}`;
   const hasPayments = false; // TODO: wire up integrations check
+  const isNewStore = (productsData?.length ?? 0) === 0 && (allOrders?.length ?? 0) === 0;
 
   return (
     <div>
@@ -71,32 +75,66 @@ export default function DashboardOverviewPage() {
       />
 
       {/* Welcome */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back{tenant ? `, ${tenant.name}` : ""}
-          </h1>
-          <p className="text-gray-500 mt-1 text-sm flex items-center gap-1.5">
-            Your store is live at{" "}
-            <a
-              href={storeUrl}
-              className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {storeUrl.replace(/^https?:\/\//, "")}
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </p>
+      {isNewStore ? (
+        <div className="mb-8 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-indigo-200 text-xs font-semibold uppercase tracking-widest mb-1">You&apos;re live 🎉</p>
+              <h1 className="text-2xl font-bold mb-1">
+                {tenant ? `${tenant.name} is ready to sell` : "Your store is ready"}
+              </h1>
+              <p className="text-indigo-200 text-sm mb-4">
+                Your storefront is live. Add products and you&apos;re in business.
+              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Link
+                  href={`/${params.slug}/products/new`}
+                  className="inline-flex items-center gap-1.5 bg-white text-indigo-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add first product
+                </Link>
+                <a
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors"
+                >
+                  {storeUrl.replace(/^https?:\/\//, "")}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
-        <Link
-          href={`/${params.slug}/products/new`}
-          className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add product
-        </Link>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back{tenant ? `, ${tenant.name}` : ""}
+            </h1>
+            <p className="text-gray-500 mt-1 text-sm flex items-center gap-1.5">
+              Your store is live at{" "}
+              <a
+                href={storeUrl}
+                className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {storeUrl.replace(/^https?:\/\//, "")}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+          <Link
+            href={`/${params.slug}/products/new`}
+            className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add product
+          </Link>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -177,9 +215,20 @@ export default function DashboardOverviewPage() {
               ))}
             </div>
           ) : (
-            <div className="py-10 text-center">
-              <ShoppingCart className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No orders yet</p>
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                <ShoppingCart className="w-6 h-6 text-blue-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-700 mb-1">No orders yet</p>
+              <p className="text-xs text-gray-400 mb-4">Orders will appear here once customers start buying.</p>
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+              >
+                Share your store link <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           )}
         </div>
@@ -222,15 +271,18 @@ export default function DashboardOverviewPage() {
               ))}
             </div>
           ) : (
-            <div className="py-10 text-center">
-              <Package className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 mb-3">No products yet</p>
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-3">
+                <Package className="w-6 h-6 text-indigo-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-700 mb-1">No products yet</p>
+              <p className="text-xs text-gray-400 mb-4">Add your first product — it only takes a minute.</p>
               <Link
                 href={`/${params.slug}/products/new`}
-                className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-500 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add your first product
+                Add a product
               </Link>
             </div>
           )}
