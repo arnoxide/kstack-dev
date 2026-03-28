@@ -9,6 +9,8 @@ import {
   Users,
   DollarSign,
   BarChart3,
+  Eye,
+  MousePointerClick,
 } from "lucide-react";
 
 // Simple bar chart using pure CSS
@@ -30,6 +32,8 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
 }
 
 export default function AnalyticsPage() {
+  const { data: traffic } = trpc.analytics.stats.useQuery({ days: 30 });
+  const { data: traffic7 } = trpc.analytics.stats.useQuery({ days: 7 });
   const { data: orders } = trpc.orders.list.useQuery({ limit: 100 });
   const { data: products } = trpc.products.list.useQuery({ limit: 100 });
   const { data: customers } = trpc.orders.customers.useQuery({ limit: 100 });
@@ -80,6 +84,59 @@ export default function AnalyticsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
         <p className="text-gray-600 mt-1">A snapshot of your store's performance</p>
+      </div>
+
+      {/* Web Traffic */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Eye className="w-4 h-4 text-gray-500" />
+          <h2 className="font-semibold text-gray-900">Storefront Traffic</h2>
+          <span className="ml-auto text-xs text-gray-400">Last 30 days</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Page Views", value: traffic?.totalPageviews ?? 0, icon: Eye },
+            { label: "Sessions", value: traffic?.uniqueSessions ?? 0, icon: MousePointerClick },
+            { label: "Views (7d)", value: traffic7?.totalPageviews ?? 0, icon: Eye },
+            { label: "Sessions (7d)", value: traffic7?.uniqueSessions ?? 0, icon: MousePointerClick },
+          ].map((m) => (
+            <div key={m.label} className="bg-gray-50 rounded-lg p-3">
+              <p className="text-xs text-gray-500 mb-1">{m.label}</p>
+              <p className="text-2xl font-bold text-gray-900">{m.value.toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Daily chart — last 7 days */}
+        {(traffic7?.daily?.length ?? 0) > 0 ? (
+          <div>
+            <p className="text-xs text-gray-500 mb-2">Daily views (last 7 days)</p>
+            <BarChart data={(traffic7?.daily ?? []).map((d) => ({ label: d.date.slice(5), value: d.views }))} />
+          </div>
+        ) : (
+          <div className="text-center py-6 text-gray-400 text-sm">No traffic data yet — visitors will appear here once the storefront is live.</div>
+        )}
+
+        {/* Top pages */}
+        {(traffic?.topPages?.length ?? 0) > 0 && (
+          <div className="mt-5 pt-4 border-t border-gray-100">
+            <p className="text-xs font-medium text-gray-500 mb-3">Top pages (30 days)</p>
+            <div className="space-y-2">
+              {(traffic?.topPages ?? []).map((p) => {
+                const maxViews = traffic?.topPages?.[0]?.views ?? 1;
+                return (
+                  <div key={p.path} className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-600 truncate flex-1 font-mono text-xs">{p.path}</span>
+                    <div className="w-24 bg-gray-100 rounded-full h-1.5 flex-shrink-0">
+                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${(p.views / maxViews) * 100}%` }} />
+                    </div>
+                    <span className="text-gray-900 font-medium w-8 text-right">{p.views}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI Stats */}

@@ -5,6 +5,7 @@ import { CustomerAuthProvider } from "@/context/customer-auth-context";
 import { ShopNavbar } from "@/components/shop-navbar";
 import { ShopFooter } from "@/components/shop-footer";
 import { AIChatWidget } from "@/components/ai-chat-widget";
+import { PageTracker } from "@/components/page-tracker";
 
 export default async function ShopLayout({
   children,
@@ -54,6 +55,7 @@ export default async function ShopLayout({
           <main className="min-h-screen">{children}</main>
           <ShopFooter shop={shop} />
           <AIChatWidget tenantId={shop.tenant.id} shopSlug={slug} />
+          <PageTracker tenantId={shop.tenant.id} />
         </CustomerAuthProvider>
       </CartProvider>
     </div>
