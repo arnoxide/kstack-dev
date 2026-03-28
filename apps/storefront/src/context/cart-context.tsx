@@ -12,6 +12,7 @@ import {
   removeFromCart,
   updateQuantity,
 } from "@/lib/cart";
+import { gtagAddToCart } from "@/lib/gtag";
 
 interface CartContextValue {
   cart: Cart;
@@ -35,6 +36,13 @@ export function CartProvider({ tenantId, children }: { tenantId: string; childre
   const add = useCallback(
     (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
       setCart(addToCart(tenantId, item));
+      gtagAddToCart({
+        item_id: item.variantId,
+        item_name: item.title,
+        item_variant: item.variantTitle !== "Default Title" ? item.variantTitle : undefined,
+        price: item.price,
+        quantity: item.quantity ?? 1,
+      });
     },
     [tenantId],
   );

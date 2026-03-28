@@ -5,6 +5,7 @@ import { useCart } from "@/context/cart-context";
 import { useCustomerAuth } from "@/context/customer-auth-context";
 import { formatCurrency } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { gtagBeginCheckout, gtagPurchase } from "@/lib/gtag";
 import Link from "next/link";
 import Script from "next/script";
 import { useParams, useRouter } from "next/navigation";
@@ -127,6 +128,16 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Fire begin_checkout once when the page loads with items
+  useEffect(() => {
+    if (cart.items.length === 0) return;
+    gtagBeginCheckout(
+      cart.items.map((i) => ({ item_id: i.variantId, item_name: i.title, item_variant: i.variantTitle !== "Default Title" ? i.variantTitle : undefined, price: i.price, quantity: i.quantity })),
+      total,
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load shipping rates when subtotal is known
   useEffect(() => {
     if (!tenantId || total <= 0) return;
@@ -183,6 +194,12 @@ export default function CheckoutPage() {
           imageUrl: item.imageUrl ?? undefined,
         })),
       });
+      gtagPurchase(
+        result.orderNumber,
+        orderTotal,
+        cart.items.map((i) => ({ item_id: i.variantId, item_name: i.title, item_variant: i.variantTitle !== "Default Title" ? i.variantTitle : undefined, price: i.price, quantity: i.quantity })),
+        shippingCost,
+      );
       clear();
       router.push(`/${params.slug}/orders/${result.orderNumber}?email=${encodeURIComponent(email)}`);
     } catch (e: unknown) {

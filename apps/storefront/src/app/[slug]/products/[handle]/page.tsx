@@ -5,6 +5,7 @@ import { ProductImageGallery } from "@/components/product-image-gallery";
 import { ProductReviews, type Review } from "@/components/product-reviews";
 import { WishlistButton } from "@/components/wishlist-button";
 import { AIRecommendations } from "@/components/ai-recommendations";
+import { GaViewItem } from "@/components/ga-view-item";
 import Link from "next/link";
 
 export default async function ProductPage({
@@ -33,8 +34,12 @@ export default async function ProductPage({
 
   const reviewsData = await api.reviews.list.query({ tenantId: shop.tenant.id, productId: product.id });
 
+  const minPrice = product.variants[0] ? Number(product.variants[0].price) : 0;
+  const firstTag = product.tags?.[0];
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <GaViewItem id={product.id} title={product.title} price={minPrice} category={firstTag} />
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-500 mb-8 flex items-center gap-2 flex-wrap">
         <Link href={`/${slug}`} className="hover:text-gray-900 transition-colors">Home</Link>
