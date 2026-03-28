@@ -19,10 +19,10 @@ const CSV_TEMPLATE = [
   'Blue Jeans,,blue-jeans,active,,480,530,BLJ-002,3,Slim Fit,,34W x 32L,',
 ].join("\n");
 
-function parseCSV(text: string): Record<string, string>[] {
+function parseCSV(text: string): Record<string, string | undefined>[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const headers = splitCSVLine(lines[0]).map((h) => h.trim().toLowerCase());
+  const headers = splitCSVLine(lines[0] ?? "").map((h) => h.trim().toLowerCase());
   return lines.slice(1).map((line) => {
     const vals = splitCSVLine(line);
     const row: Record<string, string> = {};
@@ -46,23 +46,22 @@ function splitCSVLine(line: string): string[] {
   return result;
 }
 
-function rowsToImport(parsed: Record<string, string>[]) {
+function rowsToImport(parsed: Record<string, string | undefined>[]) {
   return parsed.map((r) => {
-    // Collect option_* columns into a Record<string, string>
     const options: Record<string, string> = {};
     for (const [key, val] of Object.entries(r)) {
-      if (key.startsWith("option_") && val.trim()) {
-        const optionName = key.slice(7); // strip "option_"
-        options[optionName] = val.trim();
+      if (key.startsWith("option_") && val?.trim()) {
+        options[key.slice(7)] = val.trim();
       }
     }
+    const statusVal = r["status"] ?? "";
     return {
       title: r["title"] ?? "",
       description: r["description"] || undefined,
       handle: r["handle"] || undefined,
-      status: (["draft", "active", "archived"].includes(r["status"]) ? r["status"] : "draft") as "draft" | "active" | "archived",
+      status: (["draft", "active", "archived"].includes(statusVal) ? statusVal : "draft") as "draft" | "active" | "archived",
       tags: r["tags"] || undefined,
-      price: parseFloat(r["price"]) || 0,
+      price: parseFloat(r["price"] ?? "0") || 0,
       comparePrice: r["compare_price"] ? parseFloat(r["compare_price"]) : undefined,
       sku: r["sku"] || undefined,
       inventory: r["inventory"] ? parseInt(r["inventory"]) : 0,
@@ -97,7 +96,7 @@ export default function ProductsPage() {
 
   // Import modal state
   const [importOpen, setImportOpen] = useState(false);
-  const [parsedRows, setParsedRows] = useState<Record<string, string>[]>([]);
+  const [parsedRows, setParsedRows] = useState<Record<string, string | undefined>[]>([]);
   const [importResult, setImportResult] = useState<{ created: number; skipped: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

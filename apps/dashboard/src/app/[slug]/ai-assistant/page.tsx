@@ -313,19 +313,18 @@ export default function AIAssistantPage() {
                 {testConnection.isPending || updateSettings.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Test connection
               </button>
-              {testConnection.data && (
-                <span className={`flex items-center gap-1 text-sm font-medium ${
-                  testConnection.data.ok && !testConnection.data.warning
-                    ? "text-green-600"
-                    : testConnection.data.warning
-                    ? "text-amber-600"
-                    : "text-red-500"
-                }`}>
-                  {testConnection.data.ok && !testConnection.data.warning && <><CheckCircle className="w-4 h-4" /> Connected</>}
-                  {testConnection.data.warning && <><CheckCircle className="w-4 h-4" /> Key valid — {testConnection.data.warning}</>}
-                  {!testConnection.data.ok && !testConnection.data.warning && <><XCircle className="w-4 h-4" /> {testConnection.data.error}</>}
-                </span>
-              )}
+              {testConnection.data && (() => {
+                const d = testConnection.data as { ok: boolean; error?: string; warning?: string };
+                return (
+                  <span className={`flex items-center gap-1 text-sm font-medium ${
+                    d.ok && !d.warning ? "text-green-600" : d.warning ? "text-amber-600" : "text-red-500"
+                  }`}>
+                    {d.ok && !d.warning && <><CheckCircle className="w-4 h-4" /> Connected</>}
+                    {d.warning && <><CheckCircle className="w-4 h-4" /> Key valid — {d.warning}</>}
+                    {!d.ok && !d.warning && <><XCircle className="w-4 h-4" /> {d.error}</>}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 

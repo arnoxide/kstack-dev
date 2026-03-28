@@ -281,6 +281,7 @@ export const productsRouter = router({
 
       for (const [handle, rows] of groups) {
         const first = rows[0];
+        if (!first) { skipped++; continue; }
         const tags = first.tags
           ? first.tags.split(",").map((t) => t.trim()).filter(Boolean)
           : [];
@@ -315,12 +316,14 @@ export const productsRouter = router({
           }
 
           // Collect unique image URLs from all rows for this product
-          const imageUrls = [...new Set(rows.map((r) => r.imageUrl?.trim()).filter(Boolean))] as string[];
+          const imageUrls = [...new Set(rows.map((r) => r.imageUrl?.trim()).filter((u): u is string => !!u))];
           for (let i = 0; i < imageUrls.length; i++) {
+            const url = imageUrls[i];
+            if (!url) continue;
             await ctx.db.insert(productImages).values({
               tenantId: ctx.tenantId,
               productId: product.id,
-              url: imageUrls[i],
+              url,
               altText: first.title,
               sortOrder: i,
             });

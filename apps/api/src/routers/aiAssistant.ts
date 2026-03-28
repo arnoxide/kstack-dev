@@ -266,7 +266,7 @@ async function buildSystemPrompt(
 
   // Fetch all variants (with options) for these products
   const productIds = productList.map((p: any) => p.id);
-  let variantOptionsByProduct: Record<string, Record<string, Set<string>>> = {};
+  let variantOptionsByProduct: Record<string, Record<string, Set<string>> | undefined> = {};
   if (productIds.length > 0) {
     const variantRows = await db.execute(sql`
       SELECT product_id, options
@@ -279,9 +279,10 @@ async function buildSystemPrompt(
       if (!v.options) continue;
       const opts: Record<string, string> = typeof v.options === "string" ? JSON.parse(v.options) : v.options;
       if (!variantOptionsByProduct[v.product_id]) variantOptionsByProduct[v.product_id] = {};
+      const productOpts = variantOptionsByProduct[v.product_id]!;
       for (const [k, val] of Object.entries(opts)) {
-        if (!variantOptionsByProduct[v.product_id][k]) variantOptionsByProduct[v.product_id][k] = new Set();
-        variantOptionsByProduct[v.product_id][k].add(String(val));
+        if (!productOpts[k]) productOpts[k] = new Set();
+        productOpts[k].add(String(val));
       }
     }
   }
@@ -289,7 +290,7 @@ async function buildSystemPrompt(
   const productContext = productList
     .map((p: any) => {
       const priceStr = p.price ? ` (${currency} ${Number(p.price).toFixed(2)})` : "";
-      const optMap = variantOptionsByProduct[p.id] ?? {};
+      const optMap: Record<string, Set<string>> = variantOptionsByProduct[p.id] ?? {};
       const optStr = Object.entries(optMap)
         .map(([k, vals]) => `${k}: ${[...(vals as Set<string>)].join(", ")}`)
         .join(" | ");
