@@ -191,12 +191,18 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault();
 
-    if (!paymentConfig || paymentConfig.provider !== "paystack" || !window.PaystackPop) {
-      // No Paystack configured — COD flow
+    // COD — no payment provider configured
+    if (!paymentConfig || paymentConfig.provider !== "paystack") {
       void placeOrder();
+      return;
+    }
+
+    // Paystack configured but script not loaded yet — refuse to place without payment
+    if (!window.PaystackPop) {
+      setSubmitError("Payment is loading, please wait a moment and try again.");
       return;
     }
 
@@ -237,9 +243,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-      {paymentConfig?.provider === "paystack" && (
-        <Script src="https://js.paystack.co/v1/inline.js" strategy="beforeInteractive" />
-      )}
+      {/* Always load Paystack script eagerly so it's ready when the button is clicked */}
+      <Script src="https://js.paystack.co/v1/inline.js" strategy="afterInteractive" />
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
 
       <form ref={formRef} onSubmit={handleSubmit}>
