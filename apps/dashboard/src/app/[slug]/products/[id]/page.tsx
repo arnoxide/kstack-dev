@@ -146,6 +146,89 @@ function ImageManager({
   );
 }
 
+// ─── Options editor (shared by VariantRow + AddVariantForm) ──────────────────
+function OptionsEditor({
+  options,
+  onChange,
+}: {
+  options: Record<string, string>;
+  onChange: (opts: Record<string, string>) => void;
+}) {
+  const entries = Object.entries(options);
+
+  const updateKey = (oldKey: string, newKey: string) => {
+    const next: Record<string, string> = {};
+    for (const [k, v] of Object.entries(options)) {
+      next[k === oldKey ? newKey : k] = v;
+    }
+    onChange(next);
+  };
+
+  const updateValue = (key: string, value: string) => {
+    onChange({ ...options, [key]: value });
+  };
+
+  const remove = (key: string) => {
+    const next = { ...options };
+    delete next[key];
+    onChange(next);
+  };
+
+  const add = () => {
+    // Find a name not yet used
+    const used = new Set(Object.keys(options));
+    const suggestions = ["Size", "Color", "Material", "Style", "Fit", "Length", "Weight", "Option"];
+    const name = suggestions.find((s) => !used.has(s)) ?? `Option ${entries.length + 1}`;
+    onChange({ ...options, [name]: "" });
+  };
+
+  return (
+    <div className="col-span-2 space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-medium text-gray-500">Options <span className="text-gray-400">(Size, Color, etc.)</span></label>
+        <button
+          type="button"
+          onClick={add}
+          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+        >
+          <Plus className="w-3 h-3" />
+          Add option
+        </button>
+      </div>
+      {entries.length === 0 ? (
+        <p className="text-xs text-gray-400 italic">No options yet — click "Add option" to add Size, Color, etc.</p>
+      ) : (
+        <div className="space-y-2">
+          {entries.map(([key, value]) => (
+            <div key={key} className="flex items-center gap-2">
+              <input
+                value={key}
+                onChange={(e) => updateKey(key, e.target.value)}
+                placeholder="Option name"
+                className="w-28 border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-900 font-medium"
+              />
+              <span className="text-gray-400 text-xs">:</span>
+              <input
+                value={value}
+                onChange={(e) => updateValue(key, e.target.value)}
+                placeholder="Value"
+                className="flex-1 border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-gray-900"
+              />
+              <button
+                type="button"
+                onClick={() => remove(key)}
+                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Inline variant row ───────────────────────────────────────────────────────
 function VariantRow({
   variant,
@@ -160,6 +243,7 @@ function VariantRow({
     comparePrice: string | number | null;
     inventory: number;
     isOnSale: boolean;
+    options: Record<string, string> | null;
   };
   onDelete: (id: string) => void;
   onSaved: () => void;
@@ -174,6 +258,7 @@ function VariantRow({
   );
   const [inventory, setInventory] = useState(String(variant.inventory));
   const [isOnSale, setIsOnSale] = useState(variant.isOnSale);
+  const [options, setOptions] = useState<Record<string, string>>(variant.options ?? {});
 
   const updateMutation = trpc.products.updateVariant.useMutation({
     onSuccess: () => { setEditing(false); onSaved(); },
@@ -182,51 +267,64 @@ function VariantRow({
     onSuccess: () => onDelete(variant.id),
   });
 
+  const optionEntries = Object.entries(variant.options ?? {});
+
   if (!editing) {
     return (
-      <div className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">{variant.title}</p>
-          {variant.sku && (
-            <p className="text-xs text-gray-400 font-mono mt-0.5">SKU: {variant.sku}</p>
-          )}
-        </div>
-        <div className="text-sm text-gray-900 font-medium w-24 text-right">
-          {formatCurrency(Number(variant.price))}
-        </div>
-        {variant.comparePrice ? (
-          <div className="text-sm text-gray-400 line-through w-24 text-right hidden sm:block">
-            {formatCurrency(Number(variant.comparePrice))}
+      <div className="py-3 border-b border-gray-100 last:border-0">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900">{variant.title}</p>
+            {optionEntries.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {optionEntries.map(([k, v]) => (
+                  <span key={k} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded-md">
+                    {k}: {v}
+                  </span>
+                ))}
+              </div>
+            )}
+            {variant.sku && (
+              <p className="text-xs text-gray-400 font-mono mt-0.5">SKU: {variant.sku}</p>
+            )}
           </div>
-        ) : (
-          <div className="w-24 hidden sm:block" />
-        )}
-        <div className="text-sm text-gray-600 w-20 text-right">
-          {variant.inventory} in stock
-        </div>
-        <div className="w-16 flex justify-center">
-          {variant.isOnSale && (
-            <span className="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Sale</span>
+          <div className="text-sm text-gray-900 font-medium w-24 text-right">
+            {formatCurrency(Number(variant.price))}
+          </div>
+          {variant.comparePrice ? (
+            <div className="text-sm text-gray-400 line-through w-24 text-right hidden sm:block">
+              {formatCurrency(Number(variant.comparePrice))}
+            </div>
+          ) : (
+            <div className="w-24 hidden sm:block" />
           )}
-        </div>
-        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-          <button
-            onClick={() => setEditing(true)}
-            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={async () => {
-              const ok = await confirm({ title: "Delete variant", danger: true });
-              if (!ok) return;
-              deleteMutation.mutate({ id: variant.id });
-            }}
-            disabled={deleteMutation.isPending}
-            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="text-sm text-gray-600 w-20 text-right">
+            {variant.inventory} in stock
+          </div>
+          <div className="w-16 flex justify-center">
+            {variant.isOnSale && (
+              <span className="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Sale</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+            <button
+              onClick={() => setEditing(true)}
+              className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={async () => {
+                const ok = await confirm({ title: "Delete variant", danger: true });
+                if (!ok) return;
+                deleteMutation.mutate({ id: variant.id });
+              }}
+              disabled={deleteMutation.isPending}
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -253,7 +351,7 @@ function VariantRow({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Price (ZAR) *</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Price *</label>
           <input
             type="number"
             step="0.01"
@@ -296,6 +394,7 @@ function VariantRow({
           />
           <label htmlFor={`sale-${variant.id}`} className="text-xs font-medium text-gray-700">On Sale</label>
         </div>
+        <OptionsEditor options={options} onChange={setOptions} />
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -309,6 +408,7 @@ function VariantRow({
                 comparePrice: comparePrice ? Number(comparePrice) : null,
                 inventory: parseInt(inventory, 10),
                 isOnSale,
+                options,
               },
             })
           }
@@ -319,7 +419,7 @@ function VariantRow({
           Save variant
         </button>
         <button
-          onClick={() => { setEditing(false); setTitle(variant.title); setSku(variant.sku ?? ""); setPrice(String(variant.price)); setIsOnSale(variant.isOnSale); }}
+          onClick={() => { setEditing(false); setTitle(variant.title); setSku(variant.sku ?? ""); setPrice(String(variant.price)); setIsOnSale(variant.isOnSale); setOptions(variant.options ?? {}); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <X className="w-3 h-3" />
@@ -346,9 +446,10 @@ function AddVariantForm({
   const [comparePrice, setComparePrice] = useState("");
   const [inventory, setInventory] = useState("0");
   const [isOnSale, setIsOnSale] = useState(false);
+  const [options, setOptions] = useState<Record<string, string>>({});
 
   const createMutation = trpc.products.createVariant.useMutation({
-    onSuccess: () => { onAdded(); setTitle(""); setSku(""); setPrice(""); setComparePrice(""); setInventory("0"); },
+    onSuccess: () => { onAdded(); setTitle(""); setSku(""); setPrice(""); setComparePrice(""); setInventory("0"); setOptions({}); },
   });
 
   return (
@@ -374,7 +475,7 @@ function AddVariantForm({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Price (ZAR) *</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1">Price *</label>
           <input
             type="number"
             step="0.01"
@@ -418,6 +519,7 @@ function AddVariantForm({
           />
           <label htmlFor="new-sale" className="text-xs font-medium text-gray-700">On Sale</label>
         </div>
+        <OptionsEditor options={options} onChange={setOptions} />
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -432,6 +534,7 @@ function AddVariantForm({
                 comparePrice: comparePrice ? Number(comparePrice) : null,
                 inventory: parseInt(inventory, 10),
                 isOnSale,
+                options,
               },
             });
           }}

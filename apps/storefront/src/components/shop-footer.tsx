@@ -13,7 +13,7 @@ export function ShopFooter({ shop }: ShopFooterProps) {
         </p>
         <a href="https://zansify.com" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
           <span className="text-xs text-gray-400">Powered by</span>
-          <Image src="/zansify-logo.png" alt="Zansify" width={72} height={24} />
+          <Image src="/zansify-logo.png" alt="Zansify" width={72} height={24} unoptimized />
         </a>
       </div>
     </footer>

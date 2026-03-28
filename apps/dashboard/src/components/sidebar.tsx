@@ -72,7 +72,7 @@ export function Sidebar({ slug }: { slug: string }) {
     <aside className="w-60 flex-shrink-0 bg-gray-900 text-gray-100 h-screen overflow-y-auto flex flex-col">
       {/* Logo */}
       <div className="px-4 py-4 border-b border-gray-800">
-        <Image src="/zansify-logo.png" alt="Zansify" width={120} height={40} className="mb-2 brightness-0 invert" />
+        <Image src="/zansify-logo.png" alt="Zansify" width={120} height={40} className="mb-2 brightness-0 invert" unoptimized />
         <p className="text-xs text-gray-400 truncate">
           {auth.tenant?.name ?? slug}
         </p>

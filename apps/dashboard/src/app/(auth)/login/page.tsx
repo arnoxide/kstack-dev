@@ -37,7 +37,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" />
+          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" unoptimized />
           <p className="mt-2 text-gray-600">Sign in to your dashboard</p>
         </div>
 

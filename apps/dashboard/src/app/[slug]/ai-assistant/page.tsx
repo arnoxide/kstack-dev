@@ -25,12 +25,14 @@ export default function AIAssistantPage() {
 
   // ── Settings ────────────────────────────────────────────────────────────────
   const { data: settings, refetch: refetchSettings } = trpc.aiAssistant.settings.get.useQuery();
+  const [saveError, setSaveError] = useState("");
   const updateSettings = trpc.aiAssistant.settings.update.useMutation({
-    onSuccess: () => { refetchSettings(); setSaved(true); setTimeout(() => setSaved(false), 3000); },
+    onSuccess: () => { refetchSettings(); setSaved(true); setSaveError(""); setTimeout(() => setSaved(false), 3000); },
+    onError: (err) => { setSaveError(err.message ?? "Failed to save settings"); },
   });
   const testConnection = trpc.aiAssistant.settings.testConnection.useMutation();
 
-  const [provider, setProvider] = useState<"anthropic" | "openai" | "gemini" | "custom">("anthropic");
+  const [provider, setProvider] = useState<"anthropic" | "openai" | "gemini" | "bytez" | "custom">("anthropic");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
   const [customBaseUrl, setCustomBaseUrl] = useState("");
@@ -47,6 +49,7 @@ export default function AIAssistantPage() {
       models: ["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-6"],
       defaultModel: "claude-haiku-4-5-20251001",
       docsLabel: "console.anthropic.com",
+      hint: null,
     },
     openai: {
       label: "OpenAI (GPT)",
@@ -54,6 +57,7 @@ export default function AIAssistantPage() {
       models: ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"],
       defaultModel: "gpt-4o-mini",
       docsLabel: "platform.openai.com",
+      hint: null,
     },
     gemini: {
       label: "Google Gemini",
@@ -61,6 +65,21 @@ export default function AIAssistantPage() {
       models: ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"],
       defaultModel: "gemini-2.0-flash",
       docsLabel: "aistudio.google.com",
+      hint: null,
+    },
+    bytez: {
+      label: "Bytez",
+      placeholder: "bytez-...",
+      models: [
+        "meta-llama/Llama-3.2-1B-Instruct",
+        "meta-llama/Llama-3.1-8B-Instruct",
+        "mistralai/Mistral-7B-Instruct-v0.3",
+        "Qwen/Qwen2.5-7B-Instruct",
+        "google/gemma-2-2b-it",
+      ],
+      defaultModel: "meta-llama/Llama-3.2-1B-Instruct",
+      docsLabel: "bytez.com",
+      hint: "Use the full Hugging Face model ID as the model name (e.g. meta-llama/Llama-3.1-8B-Instruct)",
     },
     custom: {
       label: "Custom (OpenAI-compatible)",
@@ -68,6 +87,7 @@ export default function AIAssistantPage() {
       models: ["gpt-4o-mini", "llama3-8b-8192", "mistral-small-latest", "llama-3.1-70b-versatile"],
       defaultModel: "gpt-4o-mini",
       docsLabel: "your provider's docs",
+      hint: null,
     },
   } as const;
 
@@ -193,7 +213,7 @@ export default function AIAssistantPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Provider</label>
               <div className="grid grid-cols-2 gap-2">
-                {(["anthropic", "openai", "gemini", "custom"] as const).map((p) => (
+                {(["anthropic", "openai", "gemini", "bytez", "custom"] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => { setProvider(p); setModel(""); }}
@@ -207,9 +227,14 @@ export default function AIAssistantPage() {
                   </button>
                 ))}
               </div>
+              {PROVIDER_CONFIG[provider].hint && (
+                <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                  💡 {PROVIDER_CONFIG[provider].hint}
+                </p>
+              )}
             </div>
 
-            {/* Custom base URL — only shown for custom provider */}
+            {/* Custom base URL — only shown for custom (OpenAI-compatible) provider */}
             {provider === "custom" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Base URL</label>
@@ -265,18 +290,40 @@ export default function AIAssistantPage() {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={() => testConnection.mutate()}
-                disabled={testConnection.isPending || !settings?.hasKey}
+                onClick={async () => {
+                  // If there's an unsaved key in the field, save first then test
+                  if (apiKey) {
+                    await updateSettings.mutateAsync({
+                      provider,
+                      apiKey,
+                      model: model || undefined,
+                      customBaseUrl: customBaseUrl || undefined,
+                      chatEnabled,
+                      descriptionsEnabled,
+                      recommendationsEnabled,
+                      systemPromptExtra,
+                    });
+                    setApiKey("");
+                  }
+                  testConnection.mutate();
+                }}
+                disabled={testConnection.isPending || updateSettings.isPending || (!settings?.hasKey && !apiKey)}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                {testConnection.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {testConnection.isPending || updateSettings.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Test connection
               </button>
               {testConnection.data && (
-                <span className={`flex items-center gap-1 text-sm font-medium ${testConnection.data.ok ? "text-green-600" : "text-red-500"}`}>
-                  {testConnection.data.ok
-                    ? <><CheckCircle className="w-4 h-4" /> Connected</>
-                    : <><XCircle className="w-4 h-4" /> {testConnection.data.error}</>}
+                <span className={`flex items-center gap-1 text-sm font-medium ${
+                  testConnection.data.ok && !testConnection.data.warning
+                    ? "text-green-600"
+                    : testConnection.data.warning
+                    ? "text-amber-600"
+                    : "text-red-500"
+                }`}>
+                  {testConnection.data.ok && !testConnection.data.warning && <><CheckCircle className="w-4 h-4" /> Connected</>}
+                  {testConnection.data.warning && <><CheckCircle className="w-4 h-4" /> Key valid — {testConnection.data.warning}</>}
+                  {!testConnection.data.ok && !testConnection.data.warning && <><XCircle className="w-4 h-4" /> {testConnection.data.error}</>}
                 </span>
               )}
             </div>
@@ -330,6 +377,11 @@ export default function AIAssistantPage() {
           {saved && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
               <CheckCircle className="w-4 h-4" /> Settings saved
+            </div>
+          )}
+          {saveError && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+              <XCircle className="w-4 h-4" /> {saveError}
             </div>
           )}
 

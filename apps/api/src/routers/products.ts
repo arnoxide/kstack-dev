@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { productImages, products, variants } from "@kstack/db";
 import { CreateProductSchema, CreateVariantSchema } from "@kstack/types";
@@ -125,6 +125,15 @@ export const productsRouter = router({
       return { success: true };
     }),
 
+  deleteMany: protectedProcedure
+    .input(z.object({ ids: z.array(z.string().uuid()).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(products)
+        .where(and(inArray(products.id, input.ids), eq(products.tenantId, ctx.tenantId)));
+      return { deleted: input.ids.length };
+    }),
+
   createVariant: protectedProcedure
     .input(z.object({ productId: z.string().uuid(), data: CreateVariantSchema }))
     .mutation(async ({ ctx, input }) => {
@@ -235,5 +244,94 @@ export const productsRouter = router({
 
       if (!deleted) throw new TRPCError({ code: "NOT_FOUND" });
       return { success: true };
+    }),
+
+  importCsv: protectedProcedure
+    .input(
+      z.object({
+        rows: z.array(
+          z.object({
+            title: z.string().min(1),
+            description: z.string().optional(),
+            handle: z.string().optional(),
+            status: z.enum(["draft", "active", "archived"]).default("draft"),
+            tags: z.string().optional(),
+            price: z.number().min(0),
+            comparePrice: z.number().optional(),
+            sku: z.string().optional(),
+            inventory: z.number().int().min(0).default(0),
+            variantTitle: z.string().optional(),
+            imageUrl: z.string().optional(),
+            options: z.record(z.string()).optional(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Group rows by handle (multiple rows = multiple variants for one product)
+      const groups = new Map<string, typeof input.rows>();
+      for (const row of input.rows) {
+        const key = row.handle?.trim() || slugify(row.title);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(row);
+      }
+
+      let created = 0;
+      let skipped = 0;
+
+      for (const [handle, rows] of groups) {
+        const first = rows[0];
+        const tags = first.tags
+          ? first.tags.split(",").map((t) => t.trim()).filter(Boolean)
+          : [];
+
+        try {
+          const [product] = await ctx.db
+            .insert(products)
+            .values({
+              tenantId: ctx.tenantId,
+              title: first.title,
+              description: first.description ?? null,
+              handle,
+              status: first.status ?? "draft",
+              tags,
+            })
+            .returning();
+
+          if (!product) { skipped++; continue; }
+
+          for (const row of rows) {
+            await ctx.db.insert(variants).values({
+              productId: product.id,
+              tenantId: ctx.tenantId,
+              title: row.variantTitle?.trim() || "Default Title",
+              price: String(row.price),
+              comparePrice: row.comparePrice != null ? String(row.comparePrice) : null,
+              sku: row.sku?.trim() || null,
+              inventory: row.inventory ?? 0,
+              imageUrl: row.imageUrl?.trim() || null,
+              options: row.options ?? {},
+            });
+          }
+
+          // Collect unique image URLs from all rows for this product
+          const imageUrls = [...new Set(rows.map((r) => r.imageUrl?.trim()).filter(Boolean))] as string[];
+          for (let i = 0; i < imageUrls.length; i++) {
+            await ctx.db.insert(productImages).values({
+              tenantId: ctx.tenantId,
+              productId: product.id,
+              url: imageUrls[i],
+              altText: first.title,
+              sortOrder: i,
+            });
+          }
+
+          created++;
+        } catch {
+          skipped++;
+        }
+      }
+
+      return { created, skipped };
     }),
 });

@@ -19,6 +19,7 @@ export default function DashboardOverviewPage() {
   const params = useParams<{ slug: string }>();
   const { data: ordersData } = trpc.orders.list.useQuery({ limit: 5 });
   const { data: productsData } = trpc.products.list.useQuery({ limit: 5 });
+  const { data: allProductsData } = trpc.products.list.useQuery({ limit: 100 });
   const { data: customersData } = trpc.orders.customers.useQuery({ limit: 1 });
   const { data: allOrders } = trpc.orders.list.useQuery({ limit: 100 });
   const { data: tenant } = trpc.tenant.get.useQuery();
@@ -29,7 +30,7 @@ export default function DashboardOverviewPage() {
   const stats = [
     {
       label: "Total Products",
-      value: productsData?.length ?? 0,
+      value: allProductsData?.length ?? 0,
       icon: Package,
       color: "bg-blue-500",
       href: `/${params.slug}/products`,
@@ -62,13 +63,13 @@ export default function DashboardOverviewPage() {
     ? `https://${params.slug}.${rootDomain}`
     : `http://localhost:3003/${params.slug}`;
   const hasPayments = false; // TODO: wire up integrations check
-  const isNewStore = (productsData?.length ?? 0) === 0 && (allOrders?.length ?? 0) === 0;
+  const isNewStore = (allProductsData?.length ?? 0) === 0 && (allOrders?.length ?? 0) === 0;
 
   return (
     <div>
       {/* Onboarding */}
       <OnboardingChecklist
-        hasProducts={(productsData?.length ?? 0) > 0}
+        hasProducts={(allProductsData?.length ?? 0) > 0}
         hasOrders={(allOrders?.length ?? 0) > 0}
         hasPayments={hasPayments}
         storeUrl={storeUrl}

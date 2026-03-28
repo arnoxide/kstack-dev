@@ -10,7 +10,7 @@ export const aiSettings = pgTable("ai_settings", {
     .notNull()
     .unique()
     .references(() => tenants.id, { onDelete: "cascade" }),
-  provider: text("provider", { enum: ["anthropic", "openai", "gemini", "custom"] }).notNull().default("anthropic"),
+  provider: text("provider", { enum: ["anthropic", "openai", "gemini", "bytez", "custom"] }).notNull().default("anthropic"),
   apiKey: text("api_key"),
   model: text("model"),
   /** Base URL for custom OpenAI-compatible providers (Groq, Ollama, Mistral, etc.) */

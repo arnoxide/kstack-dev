@@ -59,7 +59,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" />
+          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" unoptimized />
           <p className="mt-2 text-gray-600">Create your free online store</p>
         </div>
 

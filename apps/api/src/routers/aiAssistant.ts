@@ -12,17 +12,19 @@ import {
   variants,
   collections,
   collectionProducts,
+  shippingRates,
 } from "@kstack/db";
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../trpc";
 
 // ─── Provider config ──────────────────────────────────────────────────────────
 
-type Provider = "anthropic" | "openai" | "gemini" | "custom";
+type Provider = "anthropic" | "openai" | "gemini" | "bytez" | "custom";
 
 const DEFAULT_MODELS: Record<Provider, string> = {
   anthropic: "claude-haiku-4-5-20251001",
   openai: "gpt-4o-mini",
   gemini: "gemini-2.0-flash",
+  bytez: "meta-llama/Llama-3.2-1B-Instruct",
   custom: "gpt-4o-mini",
 };
 
@@ -50,6 +52,117 @@ async function callAI(opts: {
     return response.content[0]?.type === "text" ? response.content[0].text.trim() : "";
   }
 
+  if (provider === "bytez") {
+    const headers = {
+      "Authorization": `Key ${apiKey}`,
+      "Content-Type": "application/json",
+    };
+    const baseUrl = `https://api.bytez.com/models/v2/${model}`;
+
+    // Bytez requires models to be loaded before inference.
+    // Try running; if the model isn't running yet, load it and retry once.
+    const bytezRun = async (): Promise<Response> => {
+      return fetch(baseUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: system },
+            ...messages.map((m) => ({ role: m.role, content: m.content })),
+          ],
+          max_new_tokens: maxTokens,
+        }),
+      });
+    };
+
+    let res = await bytezRun();
+    let rawText = await res.text();
+
+    // Detect "model not running" and auto-load it, then retry
+    const isNotRunning =
+      !res.ok ||
+      rawText.includes("Unable to fulfill request") ||
+      rawText.includes("not running") ||
+      rawText.includes("not loaded");
+
+    if (isNotRunning) {
+      console.log("[Bytez] Model not running — sending load request for", model);
+      await fetch(`${baseUrl}/load`, { method: "POST", headers });
+      // Give the model a few seconds to start
+      await new Promise((r) => setTimeout(r, 5000));
+      res = await bytezRun();
+      rawText = await res.text();
+    }
+
+    if (!res.ok) {
+      console.error("[Bytez HTTP error]", res.status, rawText.slice(0, 300));
+      throw Object.assign(new Error(rawText || `Bytez error (${res.status})`), { status: res.status });
+    }
+
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawText) as Record<string, unknown>;
+    } catch {
+      throw new Error(`Bytez returned non-JSON: ${rawText.slice(0, 200)}`);
+    }
+
+    // Surface API-level errors returned in the response body
+    if (data["error"]) {
+      throw new Error(String(data["error"]));
+    }
+
+    console.log("[Bytez raw response]", JSON.stringify(data).slice(0, 500));
+
+    // Shape 1: OpenAI-compatible { choices: [{ message: { content } }] }
+    const choices = data["choices"] as Array<{ message: { content: string } }> | undefined;
+    if (choices?.[0]?.message?.content) return choices[0].message.content.trim();
+
+    const output = data["output"];
+
+    // Shape 2: plain string
+    if (typeof output === "string") return output.trim();
+
+    // Shape 2b: output is a single message object {role, content}
+    if (output && !Array.isArray(output) && typeof output === "object") {
+      const msg = output as { role?: string; content?: any; text?: any };
+      const raw = msg.content ?? msg.text ?? "";
+      if (typeof raw === "string" && raw.trim()) return raw.trim();
+      if (Array.isArray(raw)) {
+        const joined = raw.map((c: any) => c?.text ?? c?.content ?? "").join("").trim();
+        if (joined) return joined;
+      }
+    }
+
+    if (Array.isArray(output) && output.length > 0) {
+      const first = output[0] as Record<string, unknown>;
+      const generatedText = first["generated_text"];
+
+      // Shape 3: generated_text is a plain string
+      if (typeof generatedText === "string") return generatedText.trim();
+
+      // Shape 4: generated_text is [{role, content|text}] — take last assistant message
+      if (Array.isArray(generatedText)) {
+        const msgs = generatedText as Array<{ role: string; text?: any; content?: any }>;
+        const assistantMsg = [...msgs].reverse().find((m) => m.role === "assistant");
+        if (assistantMsg) {
+          const raw = assistantMsg.content ?? assistantMsg.text ?? "";
+          if (typeof raw === "string") return raw.trim();
+          // content can be an array of parts: [{type:"text",text:"..."}]
+          if (Array.isArray(raw)) {
+            const joined = raw.map((c: any) => c?.text ?? c?.content ?? "").join("").trim();
+            if (joined) return joined;
+          }
+        }
+      }
+
+      // Shape 5: other top-level string fields
+      const text = first["text"] ?? first["content"];
+      if (typeof text === "string") return text.trim();
+    }
+
+    return "";
+  }
+
   const baseURL =
     provider === "gemini"
       ? "https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -72,15 +185,38 @@ async function callAI(opts: {
 }
 
 async function testProvider(provider: Provider, apiKey: string, model: string, customBaseUrl?: string | null): Promise<void> {
-  await callAI({
-    provider,
-    apiKey,
-    model,
-    system: "You are a test assistant.",
-    messages: [{ role: "user", content: "Hi" }],
-    maxTokens: 10,
-    customBaseUrl: customBaseUrl ?? null,
-  });
+  try {
+    await callAI({
+      provider,
+      apiKey,
+      model,
+      system: "You are a helpful assistant.",
+      messages: [{ role: "user", content: "Say hi." }],
+      maxTokens: 20,
+      customBaseUrl: customBaseUrl ?? null,
+    });
+  } catch (err: any) {
+    // Map raw HTTP status codes to human-readable messages
+    const status: number | undefined = err?.status ?? err?.statusCode ?? err?.response?.status;
+    const body = err?.message ?? "";
+
+    if (body.includes("Unable to fulfill request")) {
+      throw new Error("Model is not running yet — a load request has been sent. Wait 30–60 s then test again.");
+    }
+    if (status === 429 || body.includes("429")) {
+      throw new Error("Rate limit hit — your API key is valid but quota is temporarily exhausted. Wait a moment and retry.");
+    }
+    if (status === 401 || body.includes("401") || body.toLowerCase().includes("unauthorized") || body.toLowerCase().includes("invalid api key")) {
+      throw new Error("Invalid API key — double-check the key and make sure it has access to the selected model.");
+    }
+    if (status === 403 || body.includes("403")) {
+      throw new Error("Access denied (403) — the API key may not have the required permissions or the model is not enabled for this project.");
+    }
+    if (status === 404 || body.includes("404")) {
+      throw new Error(`Model not found — "${model}" may not exist or is not accessible with this key.`);
+    }
+    throw err;
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,44 +236,135 @@ async function buildSystemPrompt(
   tenantId: string,
   storeName: string,
   extra?: string | null,
+  compact = false,
 ) {
-  const productRows = await db
-    .select({
-      title: products.title,
-      description: products.description,
-      handle: products.handle,
-      tags: products.tags,
-    })
-    .from(products)
-    .where(and(eq(products.tenantId, tenantId), eq(products.status, "active")))
-    .orderBy(asc(products.title))
-    .limit(60);
+  // Determine the store's currency from a recent order (default ZAR)
+  const [currencyRow] = await db
+    .select({ currency: sql<string>`currency` })
+    .from(sql`orders`)
+    .where(sql`tenant_id = ${tenantId}`)
+    .orderBy(sql`created_at desc`)
+    .limit(1);
+  const currency = (currencyRow as any)?.currency ?? "ZAR";
 
-  const productContext = productRows
+  // Fetch ALL active products with min price and aggregated variant options
+  const productRows = await db.execute(sql`
+    SELECT
+      p.id,
+      p.title,
+      p.description,
+      p.handle,
+      p.tags,
+      (SELECT MIN(v.price) FROM variants v WHERE v.product_id = p.id) AS price
+    FROM products p
+    WHERE p.tenant_id = ${tenantId} AND p.status = 'active'
+    ORDER BY p.title ASC
+    ${compact ? sql`LIMIT 30` : sql``}
+  `);
+
+  const productList: any[] = productRows.rows ?? (productRows as any);
+
+  // Fetch all variants (with options) for these products
+  const productIds = productList.map((p: any) => p.id);
+  let variantOptionsByProduct: Record<string, Record<string, Set<string>>> = {};
+  if (productIds.length > 0) {
+    const variantRows = await db.execute(sql`
+      SELECT product_id, options
+      FROM variants
+      WHERE product_id = ANY(ARRAY[${sql.raw(productIds.map((id: string) => `'${id}'`).join(","))}]::uuid[])
+        AND options IS NOT NULL AND options != '{}'::jsonb
+    `);
+    const vRows: any[] = variantRows.rows ?? (variantRows as any);
+    for (const v of vRows) {
+      if (!v.options) continue;
+      const opts: Record<string, string> = typeof v.options === "string" ? JSON.parse(v.options) : v.options;
+      if (!variantOptionsByProduct[v.product_id]) variantOptionsByProduct[v.product_id] = {};
+      for (const [k, val] of Object.entries(opts)) {
+        if (!variantOptionsByProduct[v.product_id][k]) variantOptionsByProduct[v.product_id][k] = new Set();
+        variantOptionsByProduct[v.product_id][k].add(String(val));
+      }
+    }
+  }
+
+  const productContext = productList
     .map((p: any) => {
-      const tags = p.tags?.length ? ` [${p.tags.join(", ")}]` : "";
-      const desc = p.description ? ` — ${p.description.slice(0, 100)}` : "";
-      return `• ${p.title}${desc}${tags} (/products/${p.handle})`;
+      const priceStr = p.price ? ` (${currency} ${Number(p.price).toFixed(2)})` : "";
+      const optMap = variantOptionsByProduct[p.id] ?? {};
+      const optStr = Object.entries(optMap)
+        .map(([k, vals]) => `${k}: ${[...(vals as Set<string>)].join(", ")}`)
+        .join(" | ");
+      const rawTags = typeof p.tags === "string" ? JSON.parse(p.tags) : (p.tags ?? []);
+
+      if (compact) {
+        return `• ${p.title}${priceStr}${optStr ? ` [${optStr}]` : ""}`;
+      }
+
+      const parts: string[] = [`• ${p.title}${priceStr} — /products/${p.handle}`];
+      if (p.description) parts.push(`  Description: ${p.description.slice(0, 150)}`);
+      if (optStr) parts.push(`  Options: ${optStr}`);
+      if (rawTags.length) parts.push(`  Tags: ${rawTags.join(", ")}`);
+      return parts.join("\n");
     })
     .join("\n");
 
+  // Fetch active shipping rates
+  const shippingRows = await db
+    .select({
+      name: shippingRates.name,
+      type: shippingRates.type,
+      price: shippingRates.price,
+      minOrderAmount: shippingRates.minOrderAmount,
+      estimatedDays: shippingRates.estimatedDays,
+    })
+    .from(shippingRates)
+    .where(and(eq(shippingRates.tenantId, tenantId), eq(shippingRates.isActive, true)))
+    .orderBy(asc(shippingRates.sortOrder));
+
+  const shippingContext = shippingRows.length
+    ? shippingRows
+        .map((s: any) => {
+          if (s.type === "free") return `• ${s.name}: Free shipping${s.estimatedDays ? ` (${s.estimatedDays})` : ""}`;
+          if (s.type === "free_over") return `• ${s.name}: Free on orders over ${currency} ${Number(s.minOrderAmount).toFixed(2)}${s.estimatedDays ? ` (${s.estimatedDays})` : ""}`;
+          return `• ${s.name}: ${currency} ${Number(s.price).toFixed(2)}${s.estimatedDays ? ` (${s.estimatedDays})` : ""}`;
+        })
+        .join("\n")
+    : "No shipping rates configured.";
+
+  if (compact) {
+    return [
+      `You are a helpful shopping assistant for ${storeName}. Store currency: ${currency}.`,
+      `Products: ${productContext || "none yet"}.`,
+      `Shipping: ${shippingContext.replace(/\n/g, "; ")}.`,
+      "Use clean bullet lists for products: • Name — ZAR X.XX | Sizes: ... | Colors: ... Never add notes or disclaimers. Never list the same product twice. Never invent prices or policies.",
+      extra ?? "",
+    ].filter(Boolean).join(" ");
+  }
+
   return [
     `You are a helpful, friendly customer support assistant for ${storeName}.`,
+    `Store currency: ${currency}. Always quote prices in ${currency} — never use USD or any other currency.`,
     "",
     "Your role:",
     "- Help customers find products that match their needs",
     "- Answer questions about products, pricing, and the shopping experience",
     "- Guide customers toward making a purchase",
-    "- Be concise, warm, and professional (2–4 sentences per reply unless detail is needed)",
+    "- Be concise, warm, and professional",
+    "- When listing products use a clean bullet list, one product per line: '• Name — ZAR X.XX | Sizes: S, M, L | Colors: Black'",
+    "- Never add notes, disclaimers, or extra commentary after the list",
+    "- Never list the same product twice — if duplicates appear in the catalog, treat them as one",
     "",
-    `Active product catalog (${productRows.length} products):`,
+    `Active product catalog (${productList.length} products):`,
     productContext || "No products listed yet.",
+    "",
+    "Shipping options:",
+    shippingContext,
     "",
     "Guidelines:",
     "- Reference exact product names when recommending",
     "- Include the product path (e.g. /products/handle) when mentioning a specific product",
-    "- Be honest if you don't know something specific about policies",
-    "- Never invent prices or stock levels — say you're not sure and invite them to check the product page",
+    "- Only quote prices and shipping rates from the data above — never invent or assume values",
+    "- When a customer wants to buy or add a product to their cart, share the product page link (e.g. /products/handle) and encourage them to add it there — you cannot add to cart directly",
+    "- If asked about something not listed (policies, stock, etc.), say you're not sure and suggest they contact the store",
     extra ? `\nAdditional instructions:\n${extra}` : "",
   ]
     .join("\n")
@@ -163,7 +390,7 @@ export const aiAssistantRouter = router({
     update: adminProcedure
       .input(
         z.object({
-          provider: z.enum(["anthropic", "openai", "gemini", "custom"]).optional(),
+          provider: z.enum(["anthropic", "openai", "gemini", "bytez", "custom"]).optional(),
           apiKey: z.string().optional(),
           model: z.string().optional(),
           customBaseUrl: z.string().url().optional().or(z.literal("")),
@@ -207,14 +434,17 @@ export const aiAssistantRouter = router({
 
     testConnection: adminProcedure.mutation(async ({ ctx }) => {
       const settings = await getSettings(ctx.db, ctx.tenantId!);
-      if (!settings?.apiKey) return { ok: false, error: "No API key configured" };
+      if (!settings?.apiKey) return { ok: false, error: "No API key configured — enter and save your key first." };
       try {
         const provider: Provider = settings.provider ?? "anthropic";
         const model = settings.model || DEFAULT_MODELS[provider];
         await testProvider(provider, settings.apiKey, model, settings.customBaseUrl);
         return { ok: true };
       } catch (err: any) {
-        return { ok: false, error: err.message ?? "Connection failed" };
+        const msg: string = err?.message ?? "Connection failed";
+        // 429 from Gemini still counts as "key is valid" — surface as a warning not a failure
+        const isRateLimit = msg.includes("Rate limit") || msg.includes("429");
+        return { ok: isRateLimit, error: isRateLimit ? undefined : msg, warning: isRateLimit ? msg : undefined };
       }
     }),
   }),
@@ -338,15 +568,24 @@ export const aiAssistantRouter = router({
         .limit(1);
       const storeName = (tenant as any)?.name ?? "this store";
 
+      const provider: Provider = settings.provider ?? "anthropic";
+      const model = settings.model || DEFAULT_MODELS[provider];
+
+      // Bytez small models have tight context windows — use a compact prompt
+      const compactPrompt = provider === "bytez";
       const systemPrompt = await buildSystemPrompt(
         ctx.db,
         input.tenantId,
         storeName,
         settings.systemPromptExtra,
+        compactPrompt,
       );
 
-      const provider: Provider = settings.provider ?? "anthropic";
-      const model = settings.model || DEFAULT_MODELS[provider];
+      // Filter out empty-content messages from history — small models and Bytez
+      // reject empty strings, and an empty assistant reply should never be re-sent.
+      const cleanHistory = history
+        .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content as string }))
+        .filter((m) => m.content.trim().length > 0);
 
       let reply = "Sorry, I couldn't process that. Please try again.";
       try {
@@ -356,14 +595,30 @@ export const aiAssistantRouter = router({
           model,
           system: systemPrompt,
           messages: [
-            ...history.map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
+            ...cleanHistory,
             { role: "user" as const, content: input.message },
           ],
           maxTokens: 500,
           customBaseUrl: settings.customBaseUrl,
         });
-      } catch {
-        // Keep fallback reply
+      } catch (err: any) {
+        console.error("[AI chat error]", provider, model, err?.status, err?.message, err?.response?.data ?? "");
+        // Surface Bytez-specific errors to the user instead of a generic fallback
+        if (provider === "bytez") {
+          const status = err?.status ?? err?.statusCode;
+          if (status === 503 || err?.message?.includes("503")) {
+            reply = "The AI model is warming up — please send your message again in a few seconds.";
+          } else if (status === 404 || err?.message?.includes("404")) {
+            reply = `Model "${model}" was not found on Bytez. Check the model name in AI settings.`;
+          } else if (err?.message) {
+            reply = `AI error: ${err.message}`;
+          }
+        }
+      }
+
+      // Never save or return an empty reply — use the fallback message instead
+      if (!reply.trim()) {
+        reply = "Sorry, I couldn't process that. Please try again.";
       }
 
       await ctx.db.insert(aiChatMessages).values({
