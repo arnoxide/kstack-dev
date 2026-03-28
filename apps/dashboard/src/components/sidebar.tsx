@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -12,7 +13,6 @@ import {
   Settings,
   BarChart3,
   LogOut,
-  Store,
   Plug,
   Tag,
   Truck,
@@ -71,16 +71,11 @@ export function Sidebar({ slug }: { slug: string }) {
   return (
     <aside className="w-60 flex-shrink-0 bg-gray-900 text-gray-100 h-screen overflow-y-auto flex flex-col">
       {/* Logo */}
-      <div className="p-5 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <Store className="w-6 h-6 text-blue-400" />
-          <div>
-            <p className="font-semibold text-sm leading-none">KStack</p>
-            <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[140px]">
-              {auth.tenant?.name ?? slug}
-            </p>
-          </div>
-        </div>
+      <div className="px-4 py-4 border-b border-gray-800">
+        <Image src="/zansify-logo.png" alt="Zansify" width={120} height={40} className="mb-2 brightness-0 invert" />
+        <p className="text-xs text-gray-400 truncate">
+          {auth.tenant?.name ?? slug}
+        </p>
       </div>
 
       {/* Nav */}

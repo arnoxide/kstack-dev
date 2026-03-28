@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc";
 import { setAuthState } from "@/lib/auth-store";
 
@@ -36,7 +37,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Zansify</h1>
+          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" />
           <p className="mt-2 text-gray-600">Sign in to your dashboard</p>
         </div>
 

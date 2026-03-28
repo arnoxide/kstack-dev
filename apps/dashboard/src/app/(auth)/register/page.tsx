@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { trpc } from "@/lib/trpc";
 import { setAuthState } from "@/lib/auth-store";
 
@@ -58,7 +59,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Zansify</h1>
+          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" />
           <p className="mt-2 text-gray-600">Create your free online store</p>
         </div>
 
