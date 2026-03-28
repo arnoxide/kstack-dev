@@ -71,6 +71,13 @@ export const publicRouter = router({
         .where(and(eq(themes.tenantId, tenant.id), eq(themes.isActive, true)))
         .limit(1);
 
+      // Get analytics integrations (only public/safe IDs — no secrets)
+      const [gaRow] = await ctx.db
+        .select({ config: integrations.config, isEnabled: integrations.isEnabled })
+        .from(integrations)
+        .where(and(eq(integrations.tenantId, tenant.id), eq(integrations.provider, "google_analytics")))
+        .limit(1);
+
       return {
         tenant: {
           id: tenant.id,
@@ -79,6 +86,9 @@ export const publicRouter = router({
           logoUrl: tenant.logoUrl,
         },
         theme: activeTheme ?? null,
+        analytics: {
+          googleMeasurementId: gaRow?.isEnabled ? (gaRow.config.measurementId ?? null) : null,
+        },
       };
     }),
 

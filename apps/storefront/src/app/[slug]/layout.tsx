@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Script from "next/script";
 import { api } from "@/lib/api";
 import { CartProvider } from "@/context/cart-context";
 import { CustomerAuthProvider } from "@/context/customer-auth-context";
@@ -34,8 +35,26 @@ export default async function ShopLayout({
       } as React.CSSProperties)
     : {};
 
+  const gaId = shop.analytics?.googleMeasurementId;
+
   return (
     <div style={themeStyle}>
+      {gaId && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="gtag-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaId}');
+            `}
+          </Script>
+        </>
+      )}
       <CartProvider tenantId={shop.tenant.id}>
         <CustomerAuthProvider tenantId={shop.tenant.id}>
           <ShopNavbar shop={shop} />
