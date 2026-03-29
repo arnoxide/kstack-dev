@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   ShoppingCart,
@@ -37,20 +38,27 @@ const FINANCIAL_STATUS: Record<string, { label: string; cls: string }> = {
 // ── Order detail panel ────────────────────────────────────────────────────────
 
 function OrderPanel({ orderId, onClose }: { orderId: string; onClose: () => void }) {
+  const confirm = useConfirm();
   const { data, isLoading, refetch } = trpc.orders.getDetail.useQuery({ id: orderId });
 
   const updateStatus   = trpc.orders.updateStatus.useMutation({ onSuccess: () => refetch() });
   const addTracking    = trpc.orders.addTracking.useMutation({ onSuccess: () => { refetch(); setTrackingOpen(false); } });
-  const cancelOrder    = trpc.orders.cancel.useMutation({ onSuccess: () => { refetch(); setCancelOpen(false); } });
+  const cancelOrder    = trpc.orders.cancel.useMutation({ onSuccess: () => refetch() });
   const updateNotes    = trpc.orders.updateFulfillmentNotes.useMutation({ onSuccess: () => refetch() });
 
   const [tab, setTab]                         = useState<"details" | "customer" | "notes">("details");
   const [trackingOpen, setTrackingOpen]       = useState(false);
-  const [cancelOpen, setCancelOpen]           = useState(false);
   const [trackingNumber, setTrackingNumber]   = useState("");
   const [trackingCarrier, setTrackingCarrier] = useState("");
   const [notesInput, setNotesInput]           = useState("");
   const [cancelReason, setCancelReason]       = useState("");
+
+  // Initialize notes from server data
+  useEffect(() => {
+    if (data?.fulfillmentNotes !== undefined) {
+      setNotesInput(data.fulfillmentNotes ?? "");
+    }
+  }, [data?.fulfillmentNotes]);
 
   const addr = data?.shippingAddress as {
     firstName?: string; lastName?: string;
@@ -342,14 +350,14 @@ function OrderPanel({ orderId, onClose }: { orderId: string; onClose: () => void
                 <div className="px-6 py-5 space-y-4">
                   <p className="text-xs text-gray-500">Internal notes — not visible to the customer.</p>
                   <textarea
-                    value={notesInput || (data.fulfillmentNotes ?? "")}
+                    value={notesInput}
                     onChange={(e) => setNotesInput(e.target.value)}
                     rows={6}
                     placeholder="Add internal fulfillment notes..."
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
                   />
                   <button
-                    onClick={() => updateNotes.mutate({ id: data.id, fulfillmentNotes: notesInput || (data.fulfillmentNotes ?? "") })}
+                    onClick={() => updateNotes.mutate({ id: data.id, fulfillmentNotes: notesInput })}
                     disabled={updateNotes.isPending}
                     className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
                   >
@@ -364,43 +372,33 @@ function OrderPanel({ orderId, onClose }: { orderId: string; onClose: () => void
 
             {/* Cancel order — danger zone */}
             {data.status !== "cancelled" && data.status !== "delivered" && (
-              <div className="px-6 py-4 border-t border-gray-100">
-                {!cancelOpen ? (
-                  <button
-                    onClick={() => setCancelOpen(true)}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1.5"
-                  >
-                    <AlertTriangle className="w-4 h-4" />
-                    Cancel order
-                  </button>
-                ) : (
-                  <div className="space-y-3 bg-red-50 border border-red-200 rounded-xl p-4">
-                    <p className="text-sm font-medium text-red-800">Cancel this order?</p>
-                    <p className="text-xs text-red-600">Inventory will be restored. This cannot be undone.</p>
-                    <textarea
-                      value={cancelReason}
-                      onChange={(e) => setCancelReason(e.target.value)}
-                      rows={2}
-                      placeholder="Reason (optional)"
-                      className="w-full border border-red-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white resize-none"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => cancelOrder.mutate({ id: data.id, fulfillmentNotes: cancelReason || undefined })}
-                        disabled={cancelOrder.isPending}
-                        className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
-                      >
-                        {cancelOrder.isPending ? "Cancelling…" : "Yes, cancel order"}
-                      </button>
-                      <button
-                        onClick={() => setCancelOpen(false)}
-                        className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-                      >
-                        Keep
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <div className="px-6 py-4 border-t border-gray-100 space-y-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Cancel reason (optional)</label>
+                  <input
+                    type="text"
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="e.g. Customer requested, out of stock…"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                  />
+                </div>
+                <button
+                  disabled={cancelOrder.isPending}
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: "Cancel order",
+                      message: `Cancel order #${data.orderNumber}? Inventory will be restored. This cannot be undone.`,
+                      danger: true,
+                    });
+                    if (!ok) return;
+                    cancelOrder.mutate({ id: data.id, fulfillmentNotes: cancelReason || undefined });
+                  }}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  {cancelOrder.isPending ? "Cancelling…" : "Cancel order"}
+                </button>
               </div>
             )}
           </>

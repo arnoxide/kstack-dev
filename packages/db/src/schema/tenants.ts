@@ -10,6 +10,14 @@ export const tenants = pgTable("tenants", {
     .default("free"),
   email: text("email").notNull(),
   logoUrl: text("logo_url"),
+  contactInfo: jsonb("contact_info").$type<{
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    supportEmail?: string;
+    businessHours?: string;
+  }>(),
   socialLinks: jsonb("social_links").$type<{
     facebook?: string;
     instagram?: string;

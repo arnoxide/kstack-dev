@@ -100,6 +100,7 @@ export function ProductVariantSelector({
               variantTitle: selected.title,
               price,
               imageUrl: primaryImage,
+              ...(selected.inventory > 0 && { inventory: selected.inventory }),
             }}
           />
         ) : (

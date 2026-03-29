@@ -24,6 +24,7 @@ export const tenantRouter = router({
         email: z.string().email().optional(),
         logoUrl: z.string().url().nullable().optional(),
         socialLinks: z.record(z.string()).optional(),
+        contactInfo: z.record(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

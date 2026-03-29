@@ -117,6 +117,7 @@ export default async function ProductPage({
       <ProductReviews
         tenantId={shop.tenant.id}
         productId={product.id}
+        shopSlug={slug}
         initialReviews={reviewsData.reviews as unknown as Review[]}
         initialAvg={reviewsData.avgRating}
         initialTotal={reviewsData.total}

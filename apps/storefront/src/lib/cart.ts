@@ -8,6 +8,7 @@ export interface CartItem {
   price: number;
   imageUrl: string | null;
   quantity: number;
+  inventory?: number; // null/undefined = unlimited
 }
 
 export interface Cart {

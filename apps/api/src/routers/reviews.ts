@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import { and, avg, count, desc, eq } from "drizzle-orm";
+import { and, avg, count, desc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
-import { products, reviews } from "@kstack/db";
+import { orders, orderLineItems, products, reviews, variants } from "@kstack/db";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../trpc";
 
 export const reviewsRouter = router({
@@ -69,6 +69,26 @@ export const reviewsRouter = router({
         .where(and(eq(products.id, input.productId), eq(products.tenantId, input.tenantId)))
         .limit(1);
       if (!product) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Verify the customer has purchased this product
+      const [purchased] = await ctx.db
+        .select({ id: orderLineItems.id })
+        .from(orderLineItems)
+        .innerJoin(orders, eq(orders.id, orderLineItems.orderId))
+        .innerJoin(variants, eq(variants.id, orderLineItems.variantId))
+        .where(
+          and(
+            eq(orders.tenantId, input.tenantId),
+            eq(orders.customerEmail, input.customerEmail),
+            eq(variants.productId, input.productId),
+            ne(orders.status, "cancelled"),
+          ),
+        )
+        .limit(1);
+
+      if (!purchased) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You can only review products you've purchased." });
+      }
 
       const [created] = await ctx.db
         .insert(reviews)

@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   collections,
   collectionProducts,
+  contactMessages,
   domains,
   integrations,
   pages,
@@ -15,6 +16,7 @@ import {
 } from "@kstack/db";
 
 import { publicProcedure, router } from "../trpc";
+import { sendEmail } from "../lib/email";
 
 /**
  * Public storefront router — no auth required.
@@ -83,8 +85,10 @@ export const publicRouter = router({
           id: tenant.id,
           slug: tenant.slug,
           name: tenant.name,
+          email: tenant.email,
           logoUrl: tenant.logoUrl,
           socialLinks: tenant.socialLinks ?? null,
+          contactInfo: tenant.contactInfo ?? null,
         },
         theme: activeTheme ?? null,
         analytics: {
@@ -258,6 +262,63 @@ export const publicRouter = router({
       }
 
       return null; // No payment integration configured — COD
+    }),
+
+  // Submit a contact form message — emails the merchant
+  contact: publicProcedure
+    .input(z.object({
+      tenantId: z.string().uuid(),
+      name: z.string().min(1).max(100),
+      email: z.string().email(),
+      subject: z.string().min(1).max(200).optional(),
+      message: z.string().min(1).max(2000),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const [tenant] = await ctx.db
+        .select({ email: tenants.email, name: tenants.name })
+        .from(tenants)
+        .where(eq(tenants.id, input.tenantId))
+        .limit(1);
+
+      if (!tenant) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const subject = input.subject ? `Contact: ${input.subject}` : `New contact message from ${input.name}`;
+      const html = `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#111827">
+          <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">New Contact Message</h2>
+          <p style="color:#6b7280;margin-bottom:24px">Someone submitted the contact form on your store.</p>
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;color:#6b7280;width:120px">From</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:600">${input.name}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;color:#6b7280">Email</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb"><a href="mailto:${input.email}" style="color:#2563eb">${input.email}</a></td></tr>
+            ${input.subject ? `<tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;color:#6b7280">Subject</td><td style="padding:8px 0;border-bottom:1px solid #e5e7eb">${input.subject}</td></tr>` : ""}
+          </table>
+          <div style="margin-top:20px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px">
+            <p style="margin:0;white-space:pre-wrap;font-size:14px;line-height:1.6">${input.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+          </div>
+          <p style="margin-top:24px;font-size:12px;color:#9ca3af">Reply directly to <a href="mailto:${input.email}">${input.email}</a> to respond.</p>
+        </div>
+      `;
+
+      await Promise.all([
+        sendEmail({
+          db: ctx.db,
+          tenantId: input.tenantId,
+          to: tenant.email,
+          subject,
+          html,
+          type: "contact_form",
+          metadata: { fromName: input.name, fromEmail: input.email },
+        }),
+        ctx.db.insert(contactMessages).values({
+          tenantId: input.tenantId,
+          name: input.name,
+          email: input.email,
+          ...(input.subject && { subject: input.subject }),
+          message: input.message,
+        }),
+      ]);
+
+      return { ok: true };
     }),
 
   // Get the published home page for a tenant

@@ -9,7 +9,7 @@ import { gtagBeginCheckout, gtagPurchase } from "@/lib/gtag";
 import Link from "next/link";
 import Script from "next/script";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle, Loader2, ShoppingBag, Tag, Truck, X } from "lucide-react";
+import { CheckCircle, Loader2, ShoppingBag, Tag, Truck, X, User, UserCheck } from "lucide-react";
 
 declare global {
   interface Window {
@@ -122,6 +122,30 @@ export default function CheckoutPage() {
       .then((cfg) => setPaymentConfig(cfg))
       .catch(() => {});
   }, [tenantId]);
+
+  // Guest vs login step — auto-skip if already logged in
+  type CheckoutMode = "pick" | "guest" | "login";
+  const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>(customer ? "guest" : "pick");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  useEffect(() => { if (customer) setCheckoutMode("guest"); }, [customer]);
+
+  const { login: loginCustomer } = useCustomerAuth();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      await loginCustomer(tenantId, loginEmail, loginPassword);
+      // customer useEffect will set mode to "guest" once auth loads
+    } catch (err: unknown) {
+      setLoginError((err as { message?: string }).message ?? "Invalid email or password");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   // Submit
   const [submitting, setSubmitting] = useState(false);
@@ -254,6 +278,79 @@ export default function CheckoutPage() {
         >
           Start Shopping
         </Link>
+      </div>
+    );
+  }
+
+  // ── Guest/login picker ───────────────────────────────────────────────────────
+  if (checkoutMode === "pick") {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">How would you like to continue?</h1>
+        <p className="text-sm text-gray-500 text-center mb-8">Sign in to track orders, save addresses, and more.</p>
+        <div className="space-y-3">
+          <button
+            onClick={() => setCheckoutMode("login")}
+            className="w-full flex items-center gap-4 p-4 border-2 border-shop-accent rounded-xl hover:bg-gray-50 transition-colors text-left"
+          >
+            <div className="p-2 bg-shop-accent/10 rounded-lg flex-shrink-0">
+              <UserCheck className="w-5 h-5 text-shop-accent" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Sign in to my account</p>
+              <p className="text-xs text-gray-500 mt-0.5">Access your order history and saved addresses</p>
+            </div>
+          </button>
+          <button
+            onClick={() => setCheckoutMode("guest")}
+            className="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-left"
+          >
+            <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
+              <User className="w-5 h-5 text-gray-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Continue as guest</p>
+              <p className="text-xs text-gray-500 mt-0.5">No account needed — just fill in your details</p>
+            </div>
+          </button>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-6">
+          Don&apos;t have an account?{" "}
+          <Link href={`/${params.slug}/account`} className="text-shop-accent underline">Create one</Link>
+        </p>
+      </div>
+    );
+  }
+
+  // ── Login step ───────────────────────────────────────────────────────────────
+  if (checkoutMode === "login") {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16">
+        <button onClick={() => setCheckoutMode("pick")} className="text-xs text-gray-500 hover:text-gray-900 mb-6 flex items-center gap-1">
+          ← Back
+        </button>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Sign in</h1>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+            <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="you@example.com"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-shop-primary" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+            <input type="password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} placeholder="••••••••"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-shop-primary" />
+          </div>
+          {loginError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{loginError}</p>}
+          <button type="submit" disabled={loginLoading}
+            className="w-full bg-shop-accent text-shop-accent-fg py-3 rounded-shop font-medium hover:bg-shop-accent transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+            {loginLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</> : "Sign in & continue"}
+          </button>
+          <button type="button" onClick={() => setCheckoutMode("guest")}
+            className="w-full text-center text-sm text-gray-500 hover:text-gray-800 py-2">
+            Continue as guest instead
+          </button>
+        </form>
       </div>
     );
   }

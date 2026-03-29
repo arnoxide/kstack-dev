@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Store, Globe, Trash2, Plus, Loader2, Check, AlertCircle,
   ExternalLink, Copy, Settings2, Puzzle, Lock, Users, Crown,
-  ShieldCheck, UserMinus, X, Share2,
+  ShieldCheck, UserMinus, X, Share2, Phone,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { MODULES, getDisabledModules, saveDisabledModules } from "@/lib/modules";
@@ -87,6 +87,15 @@ export default function SettingsPage() {
   const [socialWhatsapp, setSocialWhatsapp] = useState("");
   const [socialSaved, setSocialSaved] = useState(false);
 
+  // Contact info
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactAddress, setContactAddress] = useState("");
+  const [contactCity, setContactCity] = useState("");
+  const [contactCountry, setContactCountry] = useState("");
+  const [contactSupportEmail, setContactSupportEmail] = useState("");
+  const [contactHours, setContactHours] = useState("");
+  const [contactSaved, setContactSaved] = useState(false);
+
   // Regional
   const [currency, setCurrency] = useState("ZAR");
   const [timezone, setTimezone] = useState("Africa/Johannesburg");
@@ -129,6 +138,12 @@ export default function SettingsPage() {
       setSocialTiktok(tenant.socialLinks?.tiktok ?? "");
       setSocialYoutube(tenant.socialLinks?.youtube ?? "");
       setSocialWhatsapp(tenant.socialLinks?.whatsapp ?? "");
+      setContactPhone(tenant.contactInfo?.phone ?? "");
+      setContactAddress(tenant.contactInfo?.address ?? "");
+      setContactCity(tenant.contactInfo?.city ?? "");
+      setContactCountry(tenant.contactInfo?.country ?? "");
+      setContactSupportEmail(tenant.contactInfo?.supportEmail ?? "");
+      setContactHours(tenant.contactInfo?.businessHours ?? "");
     }
   }, [tenant]);
 
@@ -152,6 +167,19 @@ export default function SettingsPage() {
     if (socialWhatsapp.trim()) socialLinks.whatsapp = socialWhatsapp.trim();
     updateTenantMutation.mutate({ socialLinks }, {
       onSuccess: () => { setSocialSaved(true); setTimeout(() => setSocialSaved(false), 3000); },
+    });
+  };
+
+  const handleSaveContact = () => {
+    const contactInfo: Record<string, string> = {};
+    if (contactPhone.trim()) contactInfo.phone = contactPhone.trim();
+    if (contactAddress.trim()) contactInfo.address = contactAddress.trim();
+    if (contactCity.trim()) contactInfo.city = contactCity.trim();
+    if (contactCountry.trim()) contactInfo.country = contactCountry.trim();
+    if (contactSupportEmail.trim()) contactInfo.supportEmail = contactSupportEmail.trim();
+    if (contactHours.trim()) contactInfo.businessHours = contactHours.trim();
+    updateTenantMutation.mutate({ contactInfo }, {
+      onSuccess: () => { setContactSaved(true); setTimeout(() => setContactSaved(false), 3000); },
     });
   };
 
@@ -267,7 +295,45 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Row 2: Regional + Domains */}
+      {/* Row 2: Contact Info */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <SectionHeader icon={Phone} title="Contact Info" subtitle="Shown on the Contact Us page of your storefront" />
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Field label="Phone">
+            <input type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="+27 11 000 0000" className={inputCls} />
+          </Field>
+          <Field label="Support email">
+            <input type="email" value={contactSupportEmail} onChange={(e) => setContactSupportEmail(e.target.value)} placeholder="support@yourstore.com" className={inputCls} />
+          </Field>
+          <Field label="Country">
+            <input type="text" value={contactCountry} onChange={(e) => setContactCountry(e.target.value)} placeholder="South Africa" className={inputCls} />
+          </Field>
+          <Field label="City">
+            <input type="text" value={contactCity} onChange={(e) => setContactCity(e.target.value)} placeholder="Cape Town" className={inputCls} />
+          </Field>
+          <div className="col-span-2">
+            <Field label="Street address">
+              <input type="text" value={contactAddress} onChange={(e) => setContactAddress(e.target.value)} placeholder="123 Main Street" className={inputCls} />
+            </Field>
+          </div>
+          <div className="col-span-2 sm:col-span-3">
+            <Field label="Business hours">
+              <textarea
+                rows={2} value={contactHours} onChange={(e) => setContactHours(e.target.value)}
+                placeholder={"Mon–Fri: 9am – 5pm\nSat: 9am – 1pm"}
+                className={`${inputCls} resize-none`}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <SaveButton onClick={handleSaveContact} pending={updateTenantMutation.isPending} saved={contactSaved} label="Save contact info" />
+        </div>
+      </div>
+
+      {/* Row 3: Regional + Domains */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Regional */}
@@ -361,7 +427,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Row 3: Modules */}
+      {/* Row 4: Modules */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <SectionHeader icon={Puzzle} title="Modules" subtitle="Enable or disable features — changes take effect immediately, no data is deleted" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
@@ -394,7 +460,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Row 4: Team Members */}
+      {/* Row 5: Team Members */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
         <div className="flex items-center justify-between pb-3 mb-1 border-b border-gray-100">
           <div className="flex items-center gap-2">

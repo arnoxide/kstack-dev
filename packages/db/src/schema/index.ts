@@ -11,3 +11,4 @@ export * from "./aiAssistant";
 export * from "./email";
 export * from "./platform";
 export * from "./analytics";
+export * from "./contact";

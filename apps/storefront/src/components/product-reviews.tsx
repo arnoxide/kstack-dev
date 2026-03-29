@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { Star, Loader2, CheckCircle } from "lucide-react";
+import { Star, Loader2, CheckCircle, Lock } from "lucide-react";
+import { useCustomerAuth } from "@/context/customer-auth-context";
+import Link from "next/link";
 
 export interface Review {
   id: string;
@@ -63,23 +65,26 @@ function ReviewCard({ review }: { review: Review }) {
 export function ProductReviews({
   tenantId,
   productId,
+  shopSlug,
   initialReviews,
   initialAvg,
   initialTotal,
 }: {
   tenantId: string;
   productId: string;
+  shopSlug: string;
   initialReviews: Review[];
   initialAvg: number | null;
   initialTotal: number;
 }) {
+  const { customer } = useCustomerAuth();
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [avg, setAvg] = useState(initialAvg);
   const [total, setTotal] = useState(initialTotal);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Form state
+  // Form state — pre-filled from logged-in customer
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState(0);
@@ -118,12 +123,26 @@ export function ProductReviews({
           )}
         </div>
         {!showForm && !submitted && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="text-sm bg-shop-accent text-shop-accent-fg px-4 py-2 rounded-shop hover:bg-shop-accent transition-colors"
-          >
-            Write a Review
-          </button>
+          customer ? (
+            <button
+              onClick={() => {
+                setName(customer.firstName ? `${customer.firstName} ${customer.lastName ?? ""}`.trim() : "");
+                setEmail(customer.email);
+                setShowForm(true);
+              }}
+              className="text-sm bg-shop-accent text-shop-accent-fg px-4 py-2 rounded-shop hover:bg-shop-accent transition-colors"
+            >
+              Write a Review
+            </button>
+          ) : (
+            <Link
+              href={`/${shopSlug}/account`}
+              className="flex items-center gap-1.5 text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-shop hover:bg-gray-50 transition-colors"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Sign in to review
+            </Link>
+          )
         )}
       </div>
 
@@ -148,11 +167,15 @@ export function ProductReviews({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-600 mb-1">Name <span className="text-red-400">*</span></label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shop-primary bg-white" />
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name"
+                readOnly={!!customer}
+                className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shop-primary bg-white ${customer ? "bg-gray-50 text-gray-500" : ""}`} />
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">Email <span className="text-red-400">*</span></label>
-              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shop-primary bg-white" />
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
+                readOnly={!!customer}
+                className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shop-primary bg-white ${customer ? "bg-gray-50 text-gray-500" : ""}`} />
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import { router } from "./trpc";
 import { analyticsRouter } from "./routers/analytics";
+import { contactRouter } from "./routers/contact";
 import { aiAssistantRouter } from "./routers/aiAssistant";
 import { authRouter } from "./routers/auth";
 import { emailRouter } from "./routers/email";
@@ -17,6 +18,7 @@ import { tenantRouter } from "./routers/tenant";
 
 export const appRouter = router({
   analytics: analyticsRouter,
+  contact: contactRouter,
   aiAssistant: aiAssistantRouter,
   auth: authRouter,
   email: emailRouter,

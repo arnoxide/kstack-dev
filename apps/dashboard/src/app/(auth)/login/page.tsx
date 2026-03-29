@@ -27,10 +27,13 @@ export default function LoginPage() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    login.mutate({ email, password });
+    const form = e.currentTarget;
+    const emailVal = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const passwordVal = (form.elements.namedItem("password") as HTMLInputElement).value;
+    login.mutate({ email: emailVal, password: passwordVal });
   };
 
   return (
