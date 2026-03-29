@@ -56,7 +56,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "payfast",
         name: "PayFast",
         description: "South Africa's leading payment gateway.",
-        logo: "https://www.payfast.co.za/assets/logo/payfast-logo.svg",
+        logo: "	https://www.payfast.co.za/wp-content/uploads/2021/11/PayFast-main-logo.svg",
         fields: [
           { key: "merchantId", label: "Merchant ID", placeholder: "10000100" },
           { key: "merchantKey", label: "Merchant Key", placeholder: "46f0cd694581a", secret: true },
@@ -68,7 +68,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "yoco",
         name: "Yoco",
         description: "Simple card payments for South African businesses.",
-        logo: "https://www.yoco.com/wp-content/themes/yoco/assets/images/yoco-logo.svg",
+        logo: "https://a.storyblok.com/f/111633/2400x1260/b3756f78aa/yoco-logo.jpg",
         fields: [
           { key: "publicKey", label: "Public Key", placeholder: "pk_live_..." },
           { key: "secretKey", label: "Secret Key", placeholder: "sk_live_...", secret: true },
@@ -94,7 +94,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "the_courier_guy",
         name: "The Courier Guy",
         description: "Door-to-door courier service across South Africa.",
-        logo: "",
+        logo: "https://thecourierguyassets.s3.af-south-1.amazonaws.com/TCGLocker.png",
         fields: [
           { key: "username", label: "Username", placeholder: "your username" },
           { key: "password", label: "Password", placeholder: "your password", secret: true },
@@ -105,7 +105,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "aramex",
         name: "Aramex",
         description: "International shipping and logistics.",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Aramex_Logo.svg",
+        logo: "https://images.seeklogo.com/logo-png/24/1/aramex-logo-png_seeklogo-249605.png",
         fields: [
           { key: "username", label: "Username", placeholder: "aramex username" },
           { key: "password", label: "Password", placeholder: "aramex password", secret: true },
@@ -117,7 +117,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "dhl",
         name: "DHL",
         description: "Express international and domestic deliveries.",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/a/a4/DHL_Logo.svg",
+        logo: "https://www.dhl.com/content/dam/dhl/global/core/images/logos/dhl-logo.svg",
         fields: [
           { key: "apiKey", label: "API Key", placeholder: "your DHL API key", secret: true },
           { key: "accountNumber", label: "Account Number", placeholder: "123456789" },
@@ -127,7 +127,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "fastway",
         name: "Fastway Couriers",
         description: "Affordable courier services in Southern Africa.",
-        logo: "",
+        logo: "https://www.fastway.co.za/media/1421/fastwaycouriers.png",
         fields: [
           { key: "apiKey", label: "API Key", placeholder: "your Fastway API key", secret: true },
           { key: "franchiseCode", label: "Franchise Code", placeholder: "CPT" },
@@ -142,7 +142,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "mailchimp",
         name: "Mailchimp",
         description: "Email marketing and automation platform.",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/9/97/Mailchimp-logo.svg",
+        logo: "https://robertkatai.com/wp-content/uploads/2019/01/wsi-imageoptim-mailchimp-logo-1-1-560x385.png",
         fields: [
           { key: "apiKey", label: "API Key", placeholder: "xxxx-us1", secret: true },
           { key: "listId", label: "Audience / List ID", placeholder: "abc123def4" },
@@ -152,7 +152,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "klaviyo",
         name: "Klaviyo",
         description: "Email and SMS marketing for e-commerce.",
-        logo: "https://www.klaviyo.com/wp-content/uploads/2023/02/klaviyo-logo.svg",
+        logo: "https://logos-world.net/wp-content/uploads/2022/06/Klaviyo-Logo-700x394.png",
         fields: [
           { key: "publicKey", label: "Public API Key", placeholder: "XXXXXX" },
           { key: "privateKey", label: "Private API Key", placeholder: "pk_...", secret: true },
@@ -162,7 +162,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "sendgrid",
         name: "SendGrid",
         description: "Transactional and marketing email delivery.",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Twilio_SendGrid_Logo.svg",
+        logo: "https://uiux-assets.sendgrid.com/logo/sg-twilio-logo-2025.svg",
         fields: [
           { key: "apiKey", label: "API Key", placeholder: "SG.xxxx", secret: true },
           { key: "fromEmail", label: "From Email", placeholder: "no-reply@yourdomain.com" },
@@ -197,7 +197,7 @@ const INTEGRATIONS: { category: string; items: IntegrationMeta[] }[] = [
         provider: "hotjar",
         name: "Hotjar",
         description: "Heatmaps, recordings and user feedback.",
-        logo: "https://upload.wikimedia.org/wikipedia/commons/8/8e/Hotjar_logo.svg",
+        logo: "https://uploads-ssl.webflow.com/63dbc5d418a20f4d0263889a/63dbd0a0a1c99262e89e4853_brand-logo.svg",
         fields: [
           { key: "siteId", label: "Site ID", placeholder: "1234567" },
         ],

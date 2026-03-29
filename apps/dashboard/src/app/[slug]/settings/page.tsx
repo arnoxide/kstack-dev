@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   UserMinus,
   X,
+  Share2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { MODULES, getDisabledModules, saveDisabledModules } from "@/lib/modules";
@@ -95,11 +96,26 @@ export default function SettingsPage() {
   const [storeSaved, setStoreSaved] = useState(false);
   const [storeError, setStoreError] = useState("");
 
+  // ── Social links ────────────────────────────────────────────────────────────
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialInstagram, setSocialInstagram] = useState("");
+  const [socialTwitter, setSocialTwitter] = useState("");
+  const [socialTiktok, setSocialTiktok] = useState("");
+  const [socialYoutube, setSocialYoutube] = useState("");
+  const [socialWhatsapp, setSocialWhatsapp] = useState("");
+  const [socialSaved, setSocialSaved] = useState(false);
+
   useEffect(() => {
     if (tenant) {
       setName(tenant.name);
       setEmail(tenant.email);
       setLogoUrl(tenant.logoUrl ?? "");
+      setSocialFacebook(tenant.socialLinks?.facebook ?? "");
+      setSocialInstagram(tenant.socialLinks?.instagram ?? "");
+      setSocialTwitter(tenant.socialLinks?.twitter ?? "");
+      setSocialTiktok(tenant.socialLinks?.tiktok ?? "");
+      setSocialYoutube(tenant.socialLinks?.youtube ?? "");
+      setSocialWhatsapp(tenant.socialLinks?.whatsapp ?? "");
     }
   }, [tenant]);
 
@@ -115,6 +131,23 @@ export default function SettingsPage() {
       email: email.trim(),
       logoUrl: logoUrl.trim() || null,
     });
+  };
+
+  const handleSaveSocials = () => {
+    setStoreError("");
+    const socialLinks: Record<string, string> = {};
+    if (socialFacebook.trim()) socialLinks.facebook = socialFacebook.trim();
+    if (socialInstagram.trim()) socialLinks.instagram = socialInstagram.trim();
+    if (socialTwitter.trim()) socialLinks.twitter = socialTwitter.trim();
+    if (socialTiktok.trim()) socialLinks.tiktok = socialTiktok.trim();
+    if (socialYoutube.trim()) socialLinks.youtube = socialYoutube.trim();
+    if (socialWhatsapp.trim()) socialLinks.whatsapp = socialWhatsapp.trim();
+    updateTenantMutation.mutate(
+      { socialLinks },
+      {
+        onSuccess: () => { setSocialSaved(true); setTimeout(() => setSocialSaved(false), 3000); },
+      },
+    );
   };
 
   // ── Domains ─────────────────────────────────────────────────────────────────
@@ -255,6 +288,49 @@ export default function SettingsPage() {
         >
           {updateTenantMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           {updateTenantMutation.isPending ? "Saving..." : "Save changes"}
+        </button>
+      </div>
+
+      {/* ── Social Links ──────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+        <div className="flex items-center gap-2 border-b border-gray-100 pb-4">
+          <Share2 className="w-4 h-4 text-gray-500" />
+          <h2 className="font-semibold text-gray-900">Social Links</h2>
+        </div>
+
+        {[
+          { label: "Facebook", value: socialFacebook, setter: setSocialFacebook, placeholder: "https://facebook.com/yourpage" },
+          { label: "Instagram", value: socialInstagram, setter: setSocialInstagram, placeholder: "https://instagram.com/yourhandle" },
+          { label: "Twitter / X", value: socialTwitter, setter: setSocialTwitter, placeholder: "https://x.com/yourhandle" },
+          { label: "TikTok", value: socialTiktok, setter: setSocialTiktok, placeholder: "https://tiktok.com/@yourhandle" },
+          { label: "YouTube", value: socialYoutube, setter: setSocialYoutube, placeholder: "https://youtube.com/@yourchannel" },
+          { label: "WhatsApp", value: socialWhatsapp, setter: setSocialWhatsapp, placeholder: "https://wa.me/27821234567" },
+        ].map(({ label, value, setter, placeholder }) => (
+          <div key={label}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <input
+              type="url"
+              value={value}
+              onChange={(e) => setter(e.target.value)}
+              placeholder={placeholder}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+        ))}
+
+        {socialSaved && (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
+            <Check className="w-4 h-4" /> Social links saved
+          </div>
+        )}
+
+        <button
+          onClick={handleSaveSocials}
+          disabled={updateTenantMutation.isPending}
+          className="flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+        >
+          {updateTenantMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          Save social links
         </button>
       </div>
 

@@ -84,6 +84,7 @@ export const publicRouter = router({
           slug: tenant.slug,
           name: tenant.name,
           logoUrl: tenant.logoUrl,
+          socialLinks: tenant.socialLinks ?? null,
         },
         theme: activeTheme ?? null,
         analytics: {
