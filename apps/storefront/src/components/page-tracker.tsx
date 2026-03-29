@@ -25,8 +25,8 @@ export function PageTracker({ tenantId }: { tenantId: string }) {
     try {
       const sessionId = getSessionId();
       const referrer = document.referrer || undefined;
-      api.analytics.track.mutate({ tenantId, path: pathname, referrer, sessionId }).catch(() => {
-        // fire-and-forget; ignore errors
+      api.analytics.track.mutate({ tenantId, path: pathname, referrer, sessionId }).catch((err) => {
+        console.warn("[PageTracker] failed to record pageview:", err);
       });
     } catch {
       // sessionStorage not available (SSR guard)

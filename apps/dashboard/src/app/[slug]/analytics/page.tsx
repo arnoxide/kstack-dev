@@ -32,7 +32,7 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
 }
 
 export default function AnalyticsPage() {
-  const { data: traffic } = trpc.analytics.stats.useQuery({ days: 30 });
+  const { data: traffic, error: trafficError } = trpc.analytics.stats.useQuery({ days: 30 });
   const { data: traffic7 } = trpc.analytics.stats.useQuery({ days: 7 });
   const { data: orders } = trpc.orders.list.useQuery({ limit: 100 });
   const { data: products } = trpc.products.list.useQuery({ limit: 100 });
@@ -93,6 +93,9 @@ export default function AnalyticsPage() {
           <h2 className="font-semibold text-gray-900">Storefront Traffic</h2>
           <span className="ml-auto text-xs text-gray-400">Last 30 days</span>
         </div>
+        {trafficError && (
+          <div className="mb-4 text-xs text-red-500 bg-red-50 rounded px-3 py-2 font-mono">{trafficError.message}</div>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Page Views", value: traffic?.totalPageviews ?? 0, icon: Eye },
