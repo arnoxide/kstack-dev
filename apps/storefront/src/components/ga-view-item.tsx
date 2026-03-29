@@ -15,7 +15,7 @@ export function GaViewItem({
   category?: string;
 }) {
   useEffect(() => {
-    gtagViewItem({ item_id: id, item_name: title, item_category: category, price, quantity: 1 });
+    gtagViewItem({ item_id: id, item_name: title, ...(category && { item_category: category }), price, quantity: 1 });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

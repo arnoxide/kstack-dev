@@ -39,7 +39,7 @@ export function CartProvider({ tenantId, children }: { tenantId: string; childre
       gtagAddToCart({
         item_id: item.variantId,
         item_name: item.title,
-        item_variant: item.variantTitle !== "Default Title" ? item.variantTitle : undefined,
+        ...(item.variantTitle !== "Default Title" && { item_variant: item.variantTitle }),
         price: item.price,
         quantity: item.quantity ?? 1,
       });

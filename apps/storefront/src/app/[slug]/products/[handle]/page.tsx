@@ -39,7 +39,7 @@ export default async function ProductPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-      <GaViewItem id={product.id} title={product.title} price={minPrice} category={firstTag} />
+      <GaViewItem id={product.id} title={product.title} price={minPrice} {...(firstTag && { category: firstTag })} />
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-500 mb-8 flex items-center gap-2 flex-wrap">
         <Link href={`/${slug}`} className="hover:text-gray-900 transition-colors">Home</Link>
