@@ -4,6 +4,7 @@ import { z } from "zod";
 import { domains, tenants } from "@kstack/db";
 import { protectedProcedure, adminProcedure, router } from "../trpc";
 import { randomBytes } from "node:crypto";
+import { sql } from "drizzle-orm";
 
 export const tenantRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -80,4 +81,36 @@ export const tenantRouter = router({
         return { success: true };
       }),
   },
+
+  setMaintenance: adminProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(tenants)
+        .set({ maintenanceMode: input.enabled, updatedAt: new Date() })
+        .where(eq(tenants.id, ctx.tenantId))
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+
+  setFrozen: adminProcedure
+    .input(z.object({ frozen: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(tenants)
+        .set({ frozenAt: input.frozen ? new Date() : null, updatedAt: new Date() })
+        .where(eq(tenants.id, ctx.tenantId))
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+
+  delete: adminProcedure
+    .mutation(async ({ ctx }) => {
+      await ctx.db
+        .delete(tenants)
+        .where(eq(tenants.id, ctx.tenantId));
+      return { success: true };
+    }),
 });

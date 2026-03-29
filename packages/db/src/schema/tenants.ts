@@ -29,6 +29,8 @@ export const tenants = pgTable("tenants", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  maintenanceMode: boolean("maintenance_mode").notNull().default(false),
+  frozenAt: timestamp("frozen_at", { withTimezone: true }),
 });
 
 export const domains = pgTable("domains", {

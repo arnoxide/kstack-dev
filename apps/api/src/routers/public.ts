@@ -62,7 +62,7 @@ export const publicRouter = router({
         }
       }
 
-      if (!tenant || tenant.suspendedAt) {
+      if (!tenant || tenant.suspendedAt || tenant.frozenAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Shop not found" });
       }
 
@@ -89,6 +89,7 @@ export const publicRouter = router({
           logoUrl: tenant.logoUrl,
           socialLinks: tenant.socialLinks ?? null,
           contactInfo: tenant.contactInfo ?? null,
+          maintenanceMode: tenant.maintenanceMode,
         },
         theme: activeTheme ?? null,
         analytics: {
@@ -118,6 +119,9 @@ export const publicRouter = router({
         limit: z.number().min(1).max(100).default(24),
         offset: z.number().min(0).default(0),
         collectionHandle: z.string().optional(),
+        isRecommended: z.boolean().optional(),
+        onSale: z.boolean().optional(),
+        sortBy: z.enum(["newest", "oldest"]).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -178,10 +182,32 @@ export const publicRouter = router({
         return enrich(rows.map((r) => r.product));
       }
 
+      // Build filter conditions
+      const conditions = [
+        eq(products.tenantId, input.tenantId),
+        eq(products.status, "active"),
+      ];
+      if (input.isRecommended) conditions.push(eq(products.isRecommended, true));
+
+      // onSale requires joining variants
+      if (input.onSale) {
+        const saleProductIds = await ctx.db
+          .selectDistinct({ productId: variants.productId })
+          .from(variants)
+          .where(and(eq(variants.isOnSale, true)));
+        const ids = saleProductIds.map((r) => r.productId).filter(Boolean) as string[];
+        if (ids.length === 0) return [];
+        const { inArray } = await import("drizzle-orm");
+        conditions.push(inArray(products.id, ids));
+      }
+
+      const order = input.sortBy === "oldest" ? asc(products.createdAt) : desc(products.createdAt);
+
       const rows = await ctx.db
         .select()
         .from(products)
-        .where(and(eq(products.tenantId, input.tenantId), eq(products.status, "active")))
+        .where(and(...conditions))
+        .orderBy(order)
         .limit(input.limit)
         .offset(input.offset);
 

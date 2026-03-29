@@ -6,9 +6,9 @@ import { trpc } from "@/lib/trpc";
 import {
   Store, Globe, Trash2, Plus, Loader2, Check, AlertCircle,
   ExternalLink, Copy, Settings2, Puzzle, Lock, Users, Crown,
-  ShieldCheck, UserMinus, X, Share2, Phone,
+  ShieldCheck, UserMinus, X, Share2, Phone, Wrench, Snowflake,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { MODULES, getDisabledModules, saveDisabledModules } from "@/lib/modules";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +67,7 @@ function SaveButton({ onClick, pending, saved, label = "Save" }: { onClick: () =
 export default function SettingsPage() {
   const confirm = useConfirm();
   const params = useParams<{ slug: string }>();
+  const router = useRouter();
   const rootDomain = process.env["NEXT_PUBLIC_ROOT_DOMAIN"];
   const storeUrl = rootDomain ? `https://${params.slug}.${rootDomain}` : `http://localhost:3003/${params.slug}`;
 
@@ -150,6 +151,12 @@ export default function SettingsPage() {
   const updateTenantMutation = trpc.tenant.update.useMutation({
     onSuccess: () => { setStoreSaved(true); refetchTenant(); setTimeout(() => setStoreSaved(false), 3000); },
     onError: (err) => setStoreError(err.message),
+  });
+
+  const setMaintenanceMutation = trpc.tenant.setMaintenance.useMutation({ onSuccess: () => refetchTenant() });
+  const setFrozenMutation = trpc.tenant.setFrozen.useMutation({ onSuccess: () => refetchTenant() });
+  const deleteTenantMutation = trpc.tenant.delete.useMutation({
+    onSuccess: () => router.push("/login"),
   });
 
   const handleSaveStore = () => {
@@ -558,15 +565,109 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Store controls */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+        <SectionHeader icon={Settings2} title="Store Controls" subtitle="Manage your store's availability" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Maintenance mode */}
+          <div className="border border-gray-200 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-yellow-500" />
+              <p className="text-sm font-semibold text-gray-900">Maintenance Mode</p>
+              {tenant?.maintenanceMode && (
+                <span className="text-[10px] bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full uppercase">Active</span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              Shows a maintenance page to visitors. Your dashboard stays fully accessible.
+            </p>
+            <button
+              disabled={setMaintenanceMutation.isPending}
+              onClick={async () => {
+                if (tenant?.maintenanceMode) {
+                  setMaintenanceMutation.mutate({ enabled: false });
+                } else {
+                  const ok = await confirm({ title: "Enable maintenance mode", message: "Your storefront will show a maintenance page to all visitors until you turn this off." });
+                  if (!ok) return;
+                  setMaintenanceMutation.mutate({ enabled: true });
+                }
+              }}
+              className={cn(
+                "text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 disabled:opacity-50",
+                tenant?.maintenanceMode
+                  ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              {setMaintenanceMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wrench className="w-3.5 h-3.5" />}
+              {tenant?.maintenanceMode ? "Turn off maintenance" : "Enable maintenance"}
+            </button>
+          </div>
+
+          {/* Freeze store */}
+          <div className="border border-gray-200 rounded-xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Snowflake className="w-4 h-4 text-blue-400" />
+              <p className="text-sm font-semibold text-gray-900">Freeze Store</p>
+              {tenant?.frozenAt && (
+                <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full uppercase">Frozen</span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              Completely hides your storefront and blocks all new orders. Your data is safe.
+            </p>
+            <button
+              disabled={setFrozenMutation.isPending}
+              onClick={async () => {
+                if (tenant?.frozenAt) {
+                  setFrozenMutation.mutate({ frozen: false });
+                } else {
+                  const ok = await confirm({ title: "Freeze store", message: "Your storefront will become inaccessible to all visitors. You can unfreeze at any time.", danger: true });
+                  if (!ok) return;
+                  setFrozenMutation.mutate({ frozen: true });
+                }
+              }}
+              className={cn(
+                "text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 disabled:opacity-50",
+                tenant?.frozenAt
+                  ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
+              )}
+            >
+              {setFrozenMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Snowflake className="w-3.5 h-3.5" />}
+              {tenant?.frozenAt ? "Unfreeze store" : "Freeze store"}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Danger zone */}
       <div className="bg-white rounded-xl border border-red-100 p-5">
         <h2 className="text-sm font-semibold text-red-600 mb-1">Danger Zone</h2>
-        <p className="text-xs text-gray-400 mb-3">These actions are permanent and cannot be undone.</p>
+        <p className="text-xs text-gray-400 mb-3">This is permanent and cannot be undone. All products, orders, customers and data will be deleted.</p>
         <button
-          className="flex items-center gap-2 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors"
-          onClick={() => alert("Contact support to delete your store.")}
+          disabled={deleteTenantMutation.isPending}
+          className="flex items-center gap-2 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+          onClick={async () => {
+            const ok = await confirm({
+              title: "Delete store",
+              message: `Permanently delete "${tenant?.name ?? "your store"}"? All products, orders, customers, and data will be gone forever.`,
+              danger: true,
+            });
+            if (!ok) return;
+            // Second confirmation — type store name
+            const ok2 = await confirm({
+              title: "Are you absolutely sure?",
+              message: `This will permanently delete all data for "${tenant?.name}". This cannot be undone.`,
+              danger: true,
+            });
+            if (!ok2) return;
+            deleteTenantMutation.mutate();
+          }}
         >
-          <Trash2 className="w-3.5 h-3.5" /> Delete store
+          {deleteTenantMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+          Delete store permanently
         </button>
       </div>
     </div>

@@ -37,6 +37,20 @@ export default async function ShopLayout({
 
   const gaId = shop.analytics?.googleMeasurementId;
 
+  if (shop.tenant.maintenanceMode) {
+    return (
+      <div style={themeStyle} className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center max-w-md">
+          <div className="text-5xl mb-6">🔧</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">{shop.tenant.name} is under maintenance</h1>
+          <p className="text-gray-500 text-sm leading-relaxed">
+            We&apos;re making some improvements and will be back shortly. Thank you for your patience.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={themeStyle}>
       {gaId && (

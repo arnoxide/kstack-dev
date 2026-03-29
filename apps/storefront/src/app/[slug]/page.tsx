@@ -13,8 +13,10 @@ export default async function ShopHomePage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
-  const [products, collections, homePage] = await Promise.all([
-    api.public.products.query({ tenantId: shop.tenant.id, limit: 12 }),
+  const [products, onSaleProducts, recommendedProducts, collections, homePage] = await Promise.all([
+    api.public.products.query({ tenantId: shop.tenant.id, limit: 8, sortBy: "newest" }),
+    api.public.products.query({ tenantId: shop.tenant.id, onSale: true, limit: 8 }),
+    api.public.products.query({ tenantId: shop.tenant.id, isRecommended: true, limit: 8 }),
     api.public.collections.query({ tenantId: shop.tenant.id }),
     api.public.homePage.query({ tenantId: shop.tenant.id }),
   ]);
@@ -43,13 +45,8 @@ export default async function ShopHomePage({ params }: { params: Promise<{ slug:
         {!hasProductBlock && products.length > 0 && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-16">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
-              <Link
-                href={`/${slug}/products`}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4"
-              >
-                View all
-              </Link>
+              <h2 className="text-2xl font-bold text-gray-900">New Arrivals</h2>
+              <Link href={`/${slug}/products`} className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4">View all</Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {products.map((product) => (
@@ -210,20 +207,51 @@ export default async function ShopHomePage({ params }: { params: Promise<{ slug:
         </section>
       )}
 
-      {/* ── Featured Products ─────────────────────────────────────────────────── */}
+      {/* ── On Sale ──────────────────────────────────────────────────────────── */}
+      {onSaleProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-red-400 mb-1">Limited time</p>
+              <h2 className="text-2xl font-bold text-gray-900">On Sale</h2>
+            </div>
+            <Link href={`/${slug}/products`} className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4 transition-colors">View all</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {onSaleProducts.map((product) => (
+              <ProductCard key={product.id} product={product} slug={slug} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Recommended ──────────────────────────────────────────────────────── */}
+      {recommendedProducts.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Handpicked</p>
+              <h2 className="text-2xl font-bold text-gray-900">Recommended</h2>
+            </div>
+            <Link href={`/${slug}/products`} className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4 transition-colors">View all</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {recommendedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} slug={slug} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── New Arrivals / All Products ───────────────────────────────────────── */}
       {hasProducts && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-16">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Handpicked</p>
-              <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Just in</p>
+              <h2 className="text-2xl font-bold text-gray-900">New Arrivals</h2>
             </div>
-            <Link
-              href={`/${slug}/products`}
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4 transition-colors"
-            >
-              View all
-            </Link>
+            <Link href={`/${slug}/products`} className="text-sm font-medium text-gray-600 hover:text-gray-900 underline underline-offset-4 transition-colors">View all</Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {products.map((product) => (

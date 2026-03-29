@@ -234,6 +234,7 @@ function VariantRow({
   variant,
   onDelete,
   onSaved,
+  onEditingChange,
 }: {
   variant: {
     id: string;
@@ -247,9 +248,15 @@ function VariantRow({
   };
   onDelete: (id: string) => void;
   onSaved: () => void;
+  onEditingChange?: (id: string, editing: boolean) => void;
 }) {
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
+
+  const setEditingWithNotify = (val: boolean) => {
+    setEditing(val);
+    onEditingChange?.(variant.id, val);
+  };
   const [title, setTitle] = useState(variant.title);
   const [sku, setSku] = useState(variant.sku ?? "");
   const [price, setPrice] = useState(String(variant.price));
@@ -261,7 +268,7 @@ function VariantRow({
   const [options, setOptions] = useState<Record<string, string>>(variant.options ?? {});
 
   const updateMutation = trpc.products.updateVariant.useMutation({
-    onSuccess: () => { setEditing(false); onSaved(); },
+    onSuccess: () => { setEditingWithNotify(false); onSaved(); },
   });
   const deleteMutation = trpc.products.deleteVariant.useMutation({
     onSuccess: () => onDelete(variant.id),
@@ -308,7 +315,7 @@ function VariantRow({
           </div>
           <div className="flex items-center gap-1 ml-2 flex-shrink-0">
             <button
-              onClick={() => setEditing(true)}
+              onClick={() => setEditingWithNotify(true)}
               className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -419,7 +426,7 @@ function VariantRow({
           Save variant
         </button>
         <button
-          onClick={() => { setEditing(false); setTitle(variant.title); setSku(variant.sku ?? ""); setPrice(String(variant.price)); setIsOnSale(variant.isOnSale); setOptions(variant.options ?? {}); }}
+          onClick={() => { setEditingWithNotify(false); setTitle(variant.title); setSku(variant.sku ?? ""); setPrice(String(variant.price)); setIsOnSale(variant.isOnSale); setOptions(variant.options ?? {}); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <X className="w-3 h-3" />
@@ -573,6 +580,17 @@ export default function EditProductPage() {
   const [showAddVariant, setShowAddVariant] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [editingVariantIds, setEditingVariantIds] = useState<Set<string>>(new Set());
+
+  const hasUnsavedVariant = editingVariantIds.size > 0 || showAddVariant;
+
+  const handleVariantEditingChange = (id: string, editing: boolean) => {
+    setEditingVariantIds((prev) => {
+      const next = new Set(prev);
+      editing ? next.add(id) : next.delete(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (product) {
@@ -801,6 +819,7 @@ export default function EditProductPage() {
                   variant={v}
                   onDelete={() => refetch()}
                   onSaved={() => refetch()}
+                  onEditingChange={handleVariantEditingChange}
                 />
               ))}
             </div>
@@ -830,14 +849,21 @@ export default function EditProductPage() {
 
         {/* Actions */}
         <div className="flex items-center justify-between pb-8">
-          <button
-            onClick={handleSave}
-            disabled={updateMutation.isPending}
-            className="flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
-          >
-            {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {updateMutation.isPending ? "Saving..." : "Save changes"}
-          </button>
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={handleSave}
+              disabled={updateMutation.isPending || hasUnsavedVariant}
+              className="flex items-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {updateMutation.isPending ? "Saving..." : "Save changes"}
+            </button>
+            {hasUnsavedVariant && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                ⚠ Save or cancel the open variant first
+              </p>
+            )}
+          </div>
 
           <button
             onClick={async () => {
