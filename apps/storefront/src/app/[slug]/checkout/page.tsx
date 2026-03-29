@@ -132,7 +132,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (cart.items.length === 0) return;
     gtagBeginCheckout(
-      cart.items.map((i) => ({ item_id: i.variantId, item_name: i.title, item_variant: i.variantTitle !== "Default Title" ? i.variantTitle : undefined, price: i.price, quantity: i.quantity })),
+      cart.items.map((i) => ({ item_id: i.variantId, item_name: i.title, ...(i.variantTitle !== "Default Title" && { item_variant: i.variantTitle }), price: i.price, quantity: i.quantity })),
       total,
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -197,7 +197,7 @@ export default function CheckoutPage() {
       gtagPurchase(
         result.orderNumber,
         orderTotal,
-        cart.items.map((i) => ({ item_id: i.variantId, item_name: i.title, item_variant: i.variantTitle !== "Default Title" ? i.variantTitle : undefined, price: i.price, quantity: i.quantity })),
+        cart.items.map((i) => ({ item_id: i.variantId, item_name: i.title, ...(i.variantTitle !== "Default Title" && { item_variant: i.variantTitle }), price: i.price, quantity: i.quantity })),
         shippingCost,
       );
       clear();
