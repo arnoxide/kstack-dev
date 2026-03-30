@@ -301,7 +301,15 @@ pnpm dev
 
 ### 6. Create your first store
 
-Open **http://localhost:3002/register** and fill in your name, email, password, and shop name. You'll land at your dashboard immediately.
+```bash
+pnpm kstack store:create
+```
+
+Fill in the prompts (name, email, password, shop name, slug). Once created, open the dashboard and log in:
+
+```
+http://localhost:3002/login
+```
 
 To visit your storefront, go to `http://localhost:3003/{your-shop-slug}`.
 
@@ -549,7 +557,7 @@ Next.js 15 merchant admin. All routes are under `/{shopSlug}/`.
 | Route | Description |
 |---|---|
 | `/login` | Sign in to existing shop |
-| `/register` | Create a new shop + owner account |
+| `/register` | Info page — stores are created via `pnpm kstack store:create` |
 | `/{slug}` | Overview — stats and recent activity |
 | `/{slug}/products` | Product management |
 | `/{slug}/orders` | Order management with fulfilment tracking |
@@ -886,6 +894,9 @@ npx create-kstack-app --version              # print version
 Run inside any KStack project with `pnpm kstack`.
 
 ```bash
+# Create a new store (owner account + tenant) — no API server required
+pnpm kstack store:create
+
 # Scaffold a new module (generates router, dashboard page, DB schema, wires everything up)
 pnpm kstack module:create KStack_Loyalty
 pnpm kstack module:create KStack_Blog --description "Blog posts and articles"
@@ -1039,6 +1050,6 @@ RESEND_API_KEY=<your key>
 
 ## License
 
-MIT — free to use, modify, and distribute. See [LICENSE](LICENSE) for the full text.
+MIT with Commons Clause — free to use, modify, and self-host. You cannot sell KStack itself as a hosted SaaS service (i.e. run a platform where third-party merchants pay you to host their stores). See [LICENSE](LICENSE) for the full text and plain-language summary.
 
 For commercial deployments with Pro or Enterprise features, a license key is required. See [License Plans](#license-plans).
