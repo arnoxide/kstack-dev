@@ -90,7 +90,6 @@ async function cmdStoreCreate() {
 
   const ask = async (prompt: string, hidden = false): Promise<string> => {
     if (hidden) {
-      // Disable echo for passwords
       process.stdout.write(prompt);
       return new Promise((resolve) => {
         const stdin = process.stdin;
@@ -128,53 +127,99 @@ async function cmdStoreCreate() {
   const name     = await ask("  Owner name    : ");
   const email    = await ask("  Owner email   : ");
   const password = await ask("  Password      : ", true);
-  const shopName = await ask("  Shop name     : ");
+  const confirm  = await ask("  Confirm       : ", true);
 
-  // Suggest a slug from shop name
+  if (password !== confirm) {
+    console.error("\n  Error: Passwords do not match.\n");
+    rl.close();
+    process.exit(1);
+  }
+  if (password.length < 8) {
+    console.error("\n  Error: Password must be at least 8 characters.\n");
+    rl.close();
+    process.exit(1);
+  }
+
+  const shopName = await ask("  Shop name     : ");
   const suggested = shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const shopSlug  = (await ask(`  Shop URL slug [${suggested}]: `)) || suggested;
 
   rl.close();
 
-  const apiPort = process.env["API_PORT"] ?? "3001";
-  const apiUrl  = `http://localhost:${apiPort}/trpc/auth.register`;
+  if (!name || !email || !shopName || !shopSlug) {
+    console.error("\n  Error: All fields are required.\n");
+    process.exit(1);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    console.error("\n  Error: Invalid email address.\n");
+    process.exit(1);
+  }
+  if (!/^[a-z0-9-]+$/.test(shopSlug)) {
+    console.error("\n  Error: Slug may only contain lowercase letters, numbers, and hyphens.\n");
+    process.exit(1);
+  }
 
   console.log("\n  Creating store...");
 
-  let res: Response;
-  try {
-    res = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        json: { name, email, password, shopName, shopSlug },
-      }),
+  // Dynamically import DB and auth — avoids loading them for other CLI commands
+  const [{ db }, schema, { eq }, bcrypt] = await Promise.all([
+    import("@kstack/db/client"),
+    import("@kstack/db/schema"),
+    import("drizzle-orm"),
+    import("bcryptjs"),
+  ] as const);
+
+  const { users, merchantUsers, tenants } = schema;
+
+  // Check for conflicts
+  const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (existingUser) {
+    console.error("\n  Error: An account with that email already exists.\n");
+    process.exit(1);
+  }
+
+  const [existingTenant] = await db.select().from(tenants).where(eq(tenants.slug, shopSlug)).limit(1);
+  if (existingTenant) {
+    console.error(`\n  Error: The slug "${shopSlug}" is already taken. Choose a different one.\n`);
+    process.exit(1);
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const result = await db.transaction(async (tx) => {
+    const [newUser] = await tx
+      .insert(users)
+      .values({ email, name, passwordHash })
+      .returning();
+
+    if (!newUser) throw new Error("Failed to create user");
+
+    const [newTenant] = await tx
+      .insert(tenants)
+      .values({ slug: shopSlug, name: shopName, email })
+      .returning();
+
+    if (!newTenant) throw new Error("Failed to create tenant");
+
+    await tx.insert(merchantUsers).values({
+      userId: newUser.id,
+      tenantId: newTenant.id,
+      role: "owner",
     });
-  } catch {
-    console.error("\n  Error: Could not reach the KStack API.");
-    console.error(`  Make sure the API is running on port ${apiPort}:`);
-    console.error("    pnpm dev  (in kstack-framework root)\n");
-    process.exit(1);
-  }
 
-  const body = await res.json() as { result?: { data?: { json?: unknown } }; error?: { message?: string; json?: { message?: string } } };
-
-  if (!res.ok || body.error) {
-    const msg = body.error?.json?.message ?? body.error?.message ?? `HTTP ${res.status}`;
-    console.error(`\n  Error: ${msg}\n`);
-    process.exit(1);
-  }
+    return { user: newUser, tenant: newTenant };
+  });
 
   const rootDomain = process.env["ROOT_DOMAIN"] ?? "localhost:3000";
-  const dashUrl    = `http://${shopSlug}.${rootDomain}`;
+  const dashUrl    = `http://${result.tenant.slug}.${rootDomain}`;
 
   console.log([
     "",
     "  Store created successfully!",
     "",
-    `  Shop name : ${shopName}`,
-    `  Shop slug : ${shopSlug}`,
-    `  Email     : ${email}`,
+    `  Shop name : ${result.tenant.name}`,
+    `  Shop slug : ${result.tenant.slug}`,
+    `  Email     : ${result.user.email}`,
     `  Dashboard : ${dashUrl}`,
     "",
     "  Log in with the email and password you just set.",
