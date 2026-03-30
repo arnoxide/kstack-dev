@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Store, Globe, Trash2, Plus, Loader2, Check, AlertCircle,
   ExternalLink, Copy, Settings2, Puzzle, Lock, Users, Crown,
-  ShieldCheck, UserMinus, X, Share2, Phone, Wrench, Snowflake,
+  ShieldCheck, UserMinus, X, Share2, Phone, Wrench, Snowflake, ScrollText,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { MODULES, getDisabledModules, saveDisabledModules } from "@/lib/modules";
@@ -88,6 +88,12 @@ export default function SettingsPage() {
   const [socialWhatsapp, setSocialWhatsapp] = useState("");
   const [socialSaved, setSocialSaved] = useState(false);
 
+  // Legal pages
+  const [legalPrivacy, setLegalPrivacy] = useState("");
+  const [legalTerms, setLegalTerms] = useState("");
+  const [legalDisclaimer, setLegalDisclaimer] = useState("");
+  const [legalSaved, setLegalSaved] = useState(false);
+
   // Contact info
   const [contactPhone, setContactPhone] = useState("");
   const [contactAddress, setContactAddress] = useState("");
@@ -145,6 +151,9 @@ export default function SettingsPage() {
       setContactCountry(tenant.contactInfo?.country ?? "");
       setContactSupportEmail(tenant.contactInfo?.supportEmail ?? "");
       setContactHours(tenant.contactInfo?.businessHours ?? "");
+      setLegalPrivacy(tenant.legalPages?.privacy ?? "");
+      setLegalTerms(tenant.legalPages?.terms ?? "");
+      setLegalDisclaimer(tenant.legalPages?.disclaimer ?? "");
     }
   }, [tenant]);
 
@@ -187,6 +196,16 @@ export default function SettingsPage() {
     if (contactHours.trim()) contactInfo.businessHours = contactHours.trim();
     updateTenantMutation.mutate({ contactInfo }, {
       onSuccess: () => { setContactSaved(true); setTimeout(() => setContactSaved(false), 3000); },
+    });
+  };
+
+  const handleSaveLegal = () => {
+    const legalPages: { privacy?: string; terms?: string; disclaimer?: string } = {};
+    if (legalPrivacy.trim()) legalPages.privacy = legalPrivacy.trim();
+    if (legalTerms.trim()) legalPages.terms = legalTerms.trim();
+    if (legalDisclaimer.trim()) legalPages.disclaimer = legalDisclaimer.trim();
+    updateTenantMutation.mutate({ legalPages }, {
+      onSuccess: () => { setLegalSaved(true); setTimeout(() => setLegalSaved(false), 3000); },
     });
   };
 
@@ -562,6 +581,56 @@ export default function SettingsPage() {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Legal Pages */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <SectionHeader
+          icon={ScrollText}
+          title="Legal Pages"
+          subtitle="Custom content for Privacy Policy, Terms & Conditions, and Disclaimer — leave blank to use the default template"
+        />
+
+        <p className="text-xs text-gray-400">
+          Write in plain text or basic Markdown (# Heading, ## Section, **bold**, - bullet). Storefront will render it automatically.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Privacy Policy</label>
+            <textarea
+              rows={6}
+              value={legalPrivacy}
+              onChange={(e) => setLegalPrivacy(e.target.value)}
+              placeholder={"# Privacy Policy\n\nLeave blank to use the default template…"}
+              className={`${inputCls} resize-y font-mono text-xs`}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Terms &amp; Conditions</label>
+            <textarea
+              rows={6}
+              value={legalTerms}
+              onChange={(e) => setLegalTerms(e.target.value)}
+              placeholder={"# Terms & Conditions\n\nLeave blank to use the default template…"}
+              className={`${inputCls} resize-y font-mono text-xs`}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Disclaimer</label>
+            <textarea
+              rows={6}
+              value={legalDisclaimer}
+              onChange={(e) => setLegalDisclaimer(e.target.value)}
+              placeholder={"# Disclaimer\n\nLeave blank to use the default template…"}
+              className={`${inputCls} resize-y font-mono text-xs`}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <SaveButton onClick={handleSaveLegal} pending={updateTenantMutation.isPending} saved={legalSaved} label="Save legal pages" />
         </div>
       </div>
 

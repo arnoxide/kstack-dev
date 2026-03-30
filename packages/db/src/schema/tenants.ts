@@ -31,6 +31,11 @@ export const tenants = pgTable("tenants", {
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   maintenanceMode: boolean("maintenance_mode").notNull().default(false),
   frozenAt: timestamp("frozen_at", { withTimezone: true }),
+  legalPages: jsonb("legal_pages").$type<{
+    privacy?: string;
+    terms?: string;
+    disclaimer?: string;
+  }>(),
 });
 
 export const domains = pgTable("domains", {

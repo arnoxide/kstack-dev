@@ -1,6 +1,6 @@
 # KStack
 
-A modern, open-source multi-tenant e-commerce platform. Merchants create and manage online stores with full customization freedom — drag-and-drop page builder, raw HTML/CSS/JS code editor, product management, order tracking, and payment processing.
+A modern, open-source multi-tenant e-commerce framework. Deploy it on your own infrastructure and give merchants everything they need to run an online store — product management, order tracking, storefront rendering, custom domains, and payment processing.
 
 Built as a TypeScript monorepo with Turborepo, tRPC, Next.js 15, Hono, Drizzle ORM, and PostgreSQL.
 
@@ -13,18 +13,21 @@ Built as a TypeScript monorepo with Turborepo, tRPC, Next.js 15, Hono, Drizzle O
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
+  - [Quick start with `create-kstack-app`](#quick-start-with-create-kstack-app)
+  - [Manual setup](#manual-setup)
+- [CLI Reference](#cli-reference)
 - [Environment Variables](#environment-variables)
+- [License Plans](#license-plans)
+- [Telemetry](#telemetry)
 - [Packages](#packages)
   - [@kstack/db](#kstackdb)
   - [@kstack/auth](#kstackauth)
   - [@kstack/types](#kstacktypes)
   - [@kstack/config](#kstackconfig)
 - [Apps](#apps)
-  - [API (`apps/api`)](#api-appsapi)
-  - [Dashboard (`apps/dashboard`)](#dashboard-appsdashboard)
-  - [Storefront (`apps/storefront`) — Planned](#storefront-appsstorefront--planned)
-  - [Builder (`apps/builder`) — Planned](#builder-appsbuilder--planned)
-  - [Gateway (`apps/gateway`) — Planned](#gateway-appsgateway--planned)
+  - [API](#api-appsapi)
+  - [Dashboard](#dashboard-appsdashboard)
+  - [Storefront](#storefront-appsstorefront)
 - [Database Schema](#database-schema)
 - [API Reference](#api-reference)
 - [Authentication](#authentication)
@@ -33,21 +36,30 @@ Built as a TypeScript monorepo with Turborepo, tRPC, Next.js 15, Hono, Drizzle O
 - [Development Commands](#development-commands)
 - [Deployment](#deployment)
 - [Roadmap](#roadmap)
+- [Contributing](#contributing)
 
 ---
 
 ## Overview
 
-KStack lets anyone create a fully functional online store with:
+KStack is a self-hosted e-commerce platform framework. You run it on your own domain, your own servers, and your own database. Merchants create stores through a dashboard you control.
 
-- A subdomain out of the box (`yourshop.zansify.com`)
-- Custom domain support with automatic SSL
-- Drag-and-drop page builder (Craft.js — planned)
-- Raw HTML/CSS/JS code editor for unlimited customization (planned)
-- Product & inventory management
-- Order management and tracking
-- Stripe Connect payments — merchants receive payouts directly (planned)
+Out of the box you get:
+
+- Subdomain store routing (`mystore.yourdomain.com`) or custom domain per store
+- Product and inventory management with variants
+- Order management with fulfillment tracking
+- Customer accounts and guest checkout
+- Storefront with theme customization
 - Multi-staff access with role-based permissions
+- Payment processing (Paystack)
+- Coupon and discount codes
+- Product reviews
+- Shipping rate configuration
+- Contact message inbox
+- AI-assisted product tools
+- Legal pages (Privacy Policy, Terms, Disclaimer)
+- Maintenance mode and store controls
 
 ---
 
@@ -61,7 +73,7 @@ KStack lets anyone create a fully functional online store with:
                        │
 ┌──────────────────────▼──────────────────────────┐
 │         apps/gateway  (Hono — planned)           │
-│  Resolves *.zansify.com hostname → tenant         │
+│  Resolves *.yourdomain.com hostname → tenant     │
 │  Injects X-KStack-Tenant-ID header               │
 └──────┬─────────────────────────────┬────────────┘
        │                             │
@@ -77,8 +89,7 @@ KStack lets anyone create a fully functional online store with:
                             └────────────────────┘
 
 apps/dashboard  →  Next.js 15 merchant admin  (Port 3002)
-apps/builder    →  Craft.js page builder      (Port 3004, planned)
-apps/worker     →  BullMQ background jobs     (planned)
+apps/storefront →  Next.js 15 public store    (Port 3003)
 ```
 
 ---
@@ -112,91 +123,136 @@ kstack/
 │   │       ├── context.ts      # tRPC context (JWT → user + tenantId)
 │   │       ├── trpc.ts         # Procedure types (public / protected / admin)
 │   │       ├── router.ts       # Root router composition
+│   │       ├── lib/
+│   │       │   ├── telemetry.ts  # Anonymous usage telemetry
+│   │       │   └── license.ts   # License plan resolution
 │   │       └── routers/
-│   │           ├── auth.ts     # register, login, refresh, me, logout
-│   │           ├── products.ts # CRUD, variants
-│   │           ├── orders.ts   # list, get, updateStatus, customers
-│   │           ├── tenant.ts   # settings, custom domains
+│   │           ├── auth.ts       # register, login, refresh, me, logout
+│   │           ├── products.ts   # CRUD, variants, images
+│   │           ├── orders.ts     # list, get, updateStatus, notes, cancel
+│   │           ├── tenant.ts     # settings, domains, maintenance, controls
+│   │           ├── public.ts     # resolveShop, storefront products, contact
+│   │           ├── reviews.ts    # product reviews (purchase-gated)
+│   │           ├── coupons.ts    # discount codes
+│   │           ├── shipping.ts   # shipping rates
+│   │           ├── contact.ts    # contact message inbox
 │   │           └── storefront.ts # themes, pages
 │   │
 │   ├── dashboard/              # Next.js 15 merchant admin (port 3002)
 │   │   └── src/
 │   │       ├── app/
-│   │       │   ├── layout.tsx               # Root layout + TrpcProvider
-│   │       │   ├── page.tsx                 # → redirects to /login
 │   │       │   ├── (auth)/
-│   │       │   │   ├── login/page.tsx       # Login form
-│   │       │   │   └── register/page.tsx    # Registration + shop creation
+│   │       │   │   ├── login/page.tsx
+│   │       │   │   └── register/page.tsx
 │   │       │   └── [slug]/
-│   │       │       ├── layout.tsx           # Dashboard shell + Sidebar
-│   │       │       ├── page.tsx             # Overview (stats, recent activity)
-│   │       │       ├── products/page.tsx    # Product list table
-│   │       │       └── orders/page.tsx      # Orders table
+│   │       │       ├── page.tsx           # Overview — stats, recent activity
+│   │       │       ├── products/          # Product management
+│   │       │       ├── orders/            # Order management
+│   │       │       ├── customers/         # Customer list
+│   │       │       ├── collections/       # Product collections
+│   │       │       ├── coupons/           # Discount codes
+│   │       │       ├── shipping/          # Shipping rates
+│   │       │       ├── reviews/           # Review moderation
+│   │       │       ├── contact/           # Contact message inbox
+│   │       │       ├── analytics/         # Store analytics
+│   │       │       └── settings/          # Store settings, domains, team
 │   │       ├── components/
-│   │       │   └── sidebar.tsx             # Navigation sidebar
-│   │       ├── providers/
-│   │       │   └── trpc-provider.tsx        # React Query + tRPC client setup
+│   │       │   └── sidebar.tsx
 │   │       └── lib/
-│   │           ├── trpc.ts                  # Typed tRPC React client
-│   │           ├── auth-store.ts            # localStorage auth persistence
-│   │           └── utils.ts                 # cn(), formatCurrency(), formatDate()
+│   │           ├── trpc.ts
+│   │           └── auth-store.ts
 │   │
-│   ├── storefront/             # Planned: SSR tenant shop (port 3003)
-│   ├── builder/                # Planned: Craft.js + Monaco editor (port 3004)
-│   ├── gateway/                # Planned: Subdomain resolver proxy (port 3000)
-│   └── worker/                 # Planned: BullMQ background jobs
+│   └── storefront/             # Next.js 15 public storefront (port 3003)
+│       └── src/
+│           ├── app/[slug]/     # Per-tenant storefront pages
+│           │   ├── page.tsx              # Home — product sections
+│           │   ├── products/[handle]/    # Product detail
+│           │   ├── cart/                 # Shopping cart
+│           │   ├── checkout/             # Checkout (guest + account)
+│           │   ├── orders/               # Order tracking
+│           │   ├── account/              # Customer account
+│           │   ├── contact/              # Contact form
+│           │   ├── wishlist/             # Wishlist
+│           │   └── legal/[page]/         # Privacy, Terms, Disclaimer
+│           ├── components/
+│           │   ├── shop-footer.tsx
+│           │   └── ...
+│           └── middleware.ts    # Subdomain → slug rewrite
 │
 ├── packages/
 │   ├── db/                     # Drizzle ORM: schema, client, migrations
-│   │   ├── src/
-│   │   │   ├── client.ts       # postgres.js pool + drizzle instance
-│   │   │   ├── index.ts        # Public exports
-│   │   │   └── schema/
-│   │   │       ├── tenants.ts  # tenants, domains
-│   │   │       ├── users.ts    # users, merchantUsers, refreshTokens
-│   │   │       ├── products.ts # products, variants, images, collections
-│   │   │       ├── orders.ts   # customers, orders, orderLineItems
-│   │   │       └── storefront.ts # themes, pages
-│   │   └── drizzle.config.ts
-│   │
-│   ├── auth/                   # JWT signing/verify, bcrypt, Hono middleware
 │   │   └── src/
-│   │       ├── jwt.ts          # signAccessToken, signRefreshToken, verify*
-│   │       ├── password.ts     # hashPassword, verifyPassword
-│   │       └── middleware.ts   # requireAuth, requireAdminRole (Hono)
+│   │       ├── client.ts
+│   │       ├── index.ts
+│   │       └── schema/
+│   │           ├── tenants.ts
+│   │           ├── users.ts
+│   │           ├── products.ts
+│   │           ├── orders.ts
+│   │           ├── storefront.ts
+│   │           ├── coupons.ts
+│   │           ├── reviews.ts
+│   │           ├── shipping.ts
+│   │           ├── contact.ts
+│   │           ├── analytics.ts
+│   │           └── platform.ts  # frameworkConfig key/value store
 │   │
-│   ├── types/                  # Zod schemas + TypeScript types (shared)
+│   ├── auth/
 │   │   └── src/
-│   │       ├── tenant.ts       # Tenant, Domain, TenantPlan schemas
-│   │       ├── auth.ts         # User, RegisterSchema, LoginSchema, JwtPayload
-│   │       ├── product.ts      # Product, Variant, CreateProduct schemas
-│   │       ├── order.ts        # Order, Address, LineItem schemas
-│   │       └── builder.ts      # Page, Theme, BuilderNode, CustomCode schemas
+│   │       ├── jwt.ts
+│   │       ├── password.ts
+│   │       └── middleware.ts
 │   │
-│   └── config/                 # Shared tsconfig, Tailwind config
+│   ├── types/
+│   └── config/
 │
 ├── infra/
-│   └── docker-compose.yml      # PostgreSQL 16 container
+│   └── docker-compose.yml
 │
-├── .env.example                # All environment variables with descriptions
-├── .npmrc                      # shamefully-hoist=true for pnpm
-├── biome.json                  # Linting + formatting rules
-├── turbo.json                  # Turborepo pipeline config
-├── pnpm-workspace.yaml         # Workspace package locations
-└── package.json                # Root scripts, devDependencies
+├── .env.example
+├── biome.json
+├── turbo.json
+├── pnpm-workspace.yaml
+└── package.json
 ```
 
 ---
 
 ## Getting Started
 
+### Quick start with `create-kstack-app`
+
+The fastest way. Run this anywhere — no cloning required:
+
+```bash
+npx create-kstack-app
+```
+
+Or with a project name:
+
+```bash
+npx create-kstack-app my-shop
+```
+
+The CLI will ask you a few questions (domain, Paystack keys, email, license key), then automatically clone the framework, generate a `.env` with strong random secrets, install dependencies, and — if Docker is running — start Postgres and push the schema. You'll be at the "create your first store" step in under two minutes.
+
+**Testing locally against a local copy of the framework:**
+
+```bash
+npx create-kstack-app my-shop --source ./kstack-framework
+```
+
+---
+
+### Manual setup
+
 ### Prerequisites
 
 - Node.js >= 20
 - pnpm >= 9 (`npm install -g pnpm`)
-- Docker + Docker Compose (`sudo apt install docker.io docker-compose-v2`)
+- Docker + Docker Compose
 
-### 1. Clone and install dependencies
+### 1. Clone and install
 
 ```bash
 git clone <repo-url> kstack
@@ -211,22 +267,17 @@ cp .env.example .env
 ```
 
 Edit `.env` and set at minimum:
-- `JWT_SECRET` — at least 32 random characters
-- `JWT_REFRESH_SECRET` — at least 32 random characters (different from JWT_SECRET)
 
-Everything else can stay as the defaults for local development.
+- `JWT_SECRET` — at least 32 random characters (`openssl rand -base64 48`)
+- `JWT_REFRESH_SECRET` — at least 32 random characters, different from above
+
+Everything else can stay as defaults for local development.
 
 ### 3. Start the database
 
 ```bash
-# Add yourself to the docker group (once)
-sudo usermod -aG docker $USER && newgrp docker
-
-# Start PostgreSQL
 docker compose -f infra/docker-compose.yml up -d
 ```
-
-> **Note:** Redis is expected to already be running on port 6379. If not, install it: `sudo apt install redis-server`
 
 ### 4. Push the database schema
 
@@ -234,7 +285,7 @@ docker compose -f infra/docker-compose.yml up -d
 pnpm db:push
 ```
 
-This creates all tables in the database. You should see `[✓] Changes applied`.
+You should see `[✓] Changes applied`.
 
 ### 5. Start development servers
 
@@ -242,24 +293,17 @@ This creates all tables in the database. You should see `[✓] Changes applied`.
 pnpm dev
 ```
 
-This starts all apps in parallel via Turborepo:
-
 | App | URL | Description |
 |---|---|---|
 | API | http://localhost:3001 | tRPC + REST server |
 | Dashboard | http://localhost:3002 | Merchant admin panel |
+| Storefront | http://localhost:3003 | Public storefront |
 
 ### 6. Create your first store
 
-Open **http://localhost:3002/register** and fill in:
+Open **http://localhost:3002/register** and fill in your name, email, password, and shop name. You'll land at your dashboard immediately.
 
-- Your name
-- Email address
-- Password (min 8 characters)
-- Shop name (e.g. "My Awesome Store")
-- Shop URL slug (e.g. `my-store` → `my-store.zansify.com`)
-
-You'll be taken straight to your dashboard at `http://localhost:3002/my-store`.
+To visit your storefront, go to `http://localhost:3003/{your-shop-slug}`.
 
 ---
 
@@ -269,23 +313,107 @@ You'll be taken straight to your dashboard at `http://localhost:3002/my-store`.
 |---|---|---|
 | `DATABASE_URL` | `postgresql://kstack:kstack@localhost:5432/kstack` | PostgreSQL connection string |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection string |
-| `JWT_SECRET` | *(must set)* | Secret for signing access tokens (min 32 chars) |
-| `JWT_REFRESH_SECRET` | *(must set)* | Secret for signing refresh tokens (min 32 chars) |
+| `JWT_SECRET` | *(required)* | Access token signing secret (min 32 chars) |
+| `JWT_REFRESH_SECRET` | *(required)* | Refresh token signing secret (min 32 chars) |
 | `NODE_ENV` | `development` | `development` or `production` |
-| `API_PORT` | `3001` | Port for the API server |
-| `GATEWAY_PORT` | `3000` | Port for the gateway proxy |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | API URL used by the dashboard |
-| `NEXT_PUBLIC_BASE_DOMAIN` | `zansify.localhost` | Base domain for tenant subdomains |
-| `STORAGE_ENDPOINT` | — | S3-compatible storage endpoint (Cloudflare R2) |
+| `API_PORT` | `3001` | API server port |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | API URL used by the dashboard and storefront |
+| `NEXT_PUBLIC_ROOT_DOMAIN` | — | Apex domain for subdomain routing (e.g. `yourdomain.com`) |
+| `STORAGE_ENDPOINT` | — | S3-compatible storage endpoint (Cloudflare R2, MinIO, etc.) |
 | `STORAGE_ACCESS_KEY_ID` | — | Storage access key |
 | `STORAGE_SECRET_ACCESS_KEY` | — | Storage secret key |
 | `STORAGE_BUCKET` | `kstack-dev` | Storage bucket name |
 | `STORAGE_PUBLIC_URL` | — | Public CDN URL for stored assets |
-| `STRIPE_SECRET_KEY` | — | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | — | Stripe webhook signing secret |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | — | Stripe publishable key (client-side) |
+| `PAYSTACK_SECRET_KEY` | — | Paystack secret key |
+| `PAYSTACK_WEBHOOK_SECRET` | — | Paystack webhook signing secret |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | — | Paystack public key (client-side) |
 | `RESEND_API_KEY` | — | Resend API key for transactional email |
-| `EMAIL_FROM` | `noreply@zansify.com` | From address for emails |
+| `EMAIL_FROM` | — | From address for outgoing emails |
+| `KSTACK_LICENSE_KEY` | — | License key for Pro/Enterprise features (see [License Plans](#license-plans)) |
+| `KSTACK_TELEMETRY` | `true` | Set to `false` to opt out of anonymous usage telemetry |
+
+---
+
+## License Plans
+
+KStack is **free and open source** under the MIT license. The Community plan has no restrictions.
+
+A license key unlocks **Pro** and **Enterprise** features for commercial deployments.
+
+| Plan | Price | Who it's for |
+|---|---|---|
+| **Community** | Free | Developers, self-hosted personal projects |
+| **Pro** | Paid | Businesses running KStack commercially |
+| **Enterprise** | Paid | Large-scale or white-label deployments |
+
+### Getting a license
+
+Get a license key at **https://kstack.dev/pricing**, then add it to your environment:
+
+```bash
+KSTACK_LICENSE_KEY=your-key-here
+```
+
+On startup the API validates your key against the license server and prints:
+
+```
+KStack API  →  http://localhost:3001
+  License   PRO ✓
+```
+
+### Gating features behind a license
+
+In your API routers, import the helpers from the license module:
+
+```typescript
+import { isPro, isEnterprise, getCurrentPlan } from "../lib/license";
+
+// Check before running a procedure
+if (!isPro()) {
+  throw new TRPCError({ code: "FORBIDDEN", message: "This feature requires a Pro license." });
+}
+```
+
+### How validation works
+
+- The license is validated **once at startup** against `https://api.kstack.dev/license/validate`
+- The result is **cached in your local database for 24 hours** — your server keeps running even if the license API is unreachable
+- If validation fails (network error, invalid key), the instance falls back to the **Community plan gracefully** — it never crashes
+- The cache endpoint and API URL are configurable via `KSTACK_LICENSE_API_URL`
+
+---
+
+## Telemetry
+
+KStack collects **anonymous usage data** to help prioritise features and fix bugs. This is enabled by default.
+
+### What is collected
+
+| Field | Description |
+|---|---|
+| `installId` | A random UUID generated once and stored in your local database |
+| `version` | The KStack version string from `package.json` |
+| `tenantCount` | Number of stores on this instance (an integer) |
+| `nodeEnv` | `development` or `production` |
+
+### What is NOT collected
+
+- Any merchant, customer, product, or order data
+- Personal or personally identifiable information
+- IP addresses
+- License keys or financial information
+
+### Opting out
+
+Set `KSTACK_TELEMETRY=false` in your `.env`:
+
+```bash
+KSTACK_TELEMETRY=false
+```
+
+### First-boot notice
+
+On the very first startup, KStack prints a notice to the terminal explaining what is collected and how to opt out. This notice is shown **once only**.
 
 ---
 
@@ -296,9 +424,9 @@ You'll be taken straight to your dashboard at `http://localhost:3002/my-store`.
 Drizzle ORM schema definitions, database client, and migration tooling.
 
 **Exports:**
-- `db` — Drizzle database instance (postgres.js connection pool, max 10 connections)
-- `withTransaction(fn)` — Helper to run operations in a transaction
-- All schema table definitions (for use in queries)
+- `db` — Drizzle database instance
+- `withTransaction(fn)` — Run operations in a transaction
+- All schema table definitions
 
 **Usage:**
 
@@ -314,7 +442,8 @@ const rows = await db.select().from(products).where(eq(products.tenantId, id));
 pnpm db:push       # Push schema directly to database (dev only)
 pnpm db:generate   # Generate SQL migration files
 pnpm db:migrate    # Apply migration files
-pnpm db:studio     # Open Drizzle Studio visual editor at localhost:4983
+pnpm db:studio     # Open Drizzle Studio at localhost:4983
+pnpm db:seed       # Seed demo store with sample products
 ```
 
 ---
@@ -328,12 +457,9 @@ JWT token management, password hashing, and Hono middleware.
 ```typescript
 import { signAccessToken, signRefreshToken, verifyAccessToken } from "@kstack/auth";
 
-// Sign tokens
 const accessToken = await signAccessToken({ sub, email, tenantId, role });  // 15min TTL
 const refreshToken = await signRefreshToken(userId);                         // 30d TTL
-
-// Verify tokens
-const payload = await verifyAccessToken(token);   // throws if invalid/expired
+const payload = await verifyAccessToken(token);                              // throws if invalid
 ```
 
 **Password functions:**
@@ -341,8 +467,8 @@ const payload = await verifyAccessToken(token);   // throws if invalid/expired
 ```typescript
 import { hashPassword, verifyPassword } from "@kstack/auth";
 
-const hash = await hashPassword("mypassword");          // bcrypt, 12 rounds
-const valid = await verifyPassword("mypassword", hash); // boolean
+const hash = await hashPassword("mypassword");           // bcrypt, 12 rounds
+const valid = await verifyPassword("mypassword", hash);  // boolean
 ```
 
 **Hono middleware:**
@@ -354,10 +480,6 @@ app.get("/protected", requireAuth, (c) => {
   const user = c.get("user"); // JwtPayload
   return c.json({ user });
 });
-
-app.delete("/admin-only", requireAuth, requireAdminRole, (c) => {
-  // Only owner/admin can reach here
-});
 ```
 
 ---
@@ -366,39 +488,19 @@ app.delete("/admin-only", requireAuth, requireAdminRole, (c) => {
 
 Shared Zod schemas and TypeScript types used across all apps and packages.
 
-**Tenant types:**
 ```typescript
-import { TenantSchema, CreateTenantSchema, TenantPlan } from "@kstack/types";
+import { TenantSchema, TenantPlan } from "@kstack/types";
 // TenantPlan: "free" | "starter" | "pro" | "enterprise"
-```
 
-**Auth types:**
-```typescript
 import { RegisterSchema, LoginSchema, JwtPayload, UserRole } from "@kstack/types";
 // UserRole: "owner" | "admin" | "staff"
-```
 
-**Product types:**
-```typescript
-import { CreateProductSchema, CreateVariantSchema, ProductStatus } from "@kstack/types";
+import { CreateProductSchema, ProductStatus } from "@kstack/types";
 // ProductStatus: "draft" | "active" | "archived"
-```
 
-**Order types:**
-```typescript
-import { OrderSchema, AddressSchema, OrderStatus, FinancialStatus } from "@kstack/types";
+import { OrderSchema, OrderStatus, FinancialStatus } from "@kstack/types";
 // OrderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded"
 // FinancialStatus: "pending" | "paid" | "refunded" | "partially_refunded" | "failed"
-```
-
-**Builder types:**
-```typescript
-import { PageSchema, ThemeSchema, CustomCodeSchema, PageType } from "@kstack/types";
-// PageType: "home" | "product" | "collection" | "blog" | "custom" | "404"
-// Theme.settings: { primaryColor, secondaryColor, accentColor, fontHeading, fontBody, borderRadius }
-// Page.mode: "visual" | "code"
-// Page.content: Craft.js serialized node tree (JSONB)
-// Page.customCode: { html, css, js }
 ```
 
 ---
@@ -407,8 +509,8 @@ import { PageSchema, ThemeSchema, CustomCodeSchema, PageType } from "@kstack/typ
 
 Shared base configurations.
 
-- `@kstack/config/tsconfig` — TypeScript base config (strict, noUncheckedIndexedAccess)
-- `@kstack/config/tailwind` — Tailwind base theme (CSS variable colors, border radius)
+- `@kstack/config/tsconfig` — TypeScript base config (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
+- `@kstack/config/tailwind` — Tailwind base theme
 
 ---
 
@@ -425,9 +527,8 @@ Hono HTTP server with tRPC adapter. All business logic lives here.
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Server health check |
-| `POST` | `/trpc/*` | tRPC batch handler (all mutations/queries) |
-
-**tRPC procedures** are documented in the [API Reference](#api-reference) section.
+| `POST` | `/webhook/paystack` | Paystack payment webhook |
+| `ALL` | `/trpc/*` | tRPC batch handler |
 
 **tRPC procedure types:**
 
@@ -443,67 +544,55 @@ Hono HTTP server with tRPC adapter. All business logic lives here.
 
 **Port:** 3002
 
-Next.js 15 merchant admin SPA. All routes are under `/{shopSlug}/`.
-
-**Routes:**
+Next.js 15 merchant admin. All routes are under `/{shopSlug}/`.
 
 | Route | Description |
 |---|---|
-| `/` | Redirects to `/login` |
 | `/login` | Sign in to existing shop |
 | `/register` | Create a new shop + owner account |
-| `/{slug}` | Dashboard overview — stats, recent orders and products |
-| `/{slug}/products` | Product list with status badges |
-| `/{slug}/orders` | Order list with financial status badges |
-| `/{slug}/customers` | Customer list (planned) |
-| `/{slug}/themes` | Theme & page management (planned) |
-| `/{slug}/analytics` | Analytics dashboard (planned) |
-| `/{slug}/settings` | Store settings, custom domains, billing (planned) |
-
-**Auth flow:**
-
-1. User submits login/register form
-2. tRPC mutation fires to `http://localhost:3001/trpc/auth.login`
-3. On success, `{ accessToken, refreshToken, user, tenant }` stored in `localStorage` under key `kstack_auth`
-4. Every subsequent tRPC request reads the access token from `localStorage` and attaches it as `Authorization: Bearer <token>` header
-5. Logout clears localStorage and redirects to `/login`
+| `/{slug}` | Overview — stats and recent activity |
+| `/{slug}/products` | Product management |
+| `/{slug}/orders` | Order management with fulfilment tracking |
+| `/{slug}/customers` | Customer list |
+| `/{slug}/collections` | Product collections |
+| `/{slug}/coupons` | Discount codes |
+| `/{slug}/shipping` | Shipping rates |
+| `/{slug}/reviews` | Review moderation |
+| `/{slug}/contact` | Contact message inbox |
+| `/{slug}/analytics` | Store analytics |
+| `/{slug}/settings` | Store settings, team, domains, legal pages, store controls |
 
 ---
 
-### Storefront (`apps/storefront`) — Planned
+### Storefront (`apps/storefront`)
 
-Next.js 15 SSR app that renders any tenant's shop. Will be powered by:
-- Gateway-injected `X-KStack-Tenant-ID` request header for tenant resolution
-- `pages.content` (Craft.js JSON) hydrated into React components in read-only mode
-- `pages.customCode` rendered inside a sandboxed `<iframe>` with strict CSP
-- Per-tenant `unstable_cache` with 60s revalidation for product/collection pages
-- No-store cache for cart and checkout pages
+**Port:** 3003
 
----
+Next.js 15 SSR app that renders any tenant's shop.
 
-### Builder (`apps/builder`) — Planned
+**How tenant resolution works:**
 
-Full-screen collaborative page editor.
+- In development, stores are accessed at `http://localhost:3003/{slug}`
+- In production with `NEXT_PUBLIC_ROOT_DOMAIN=yourdomain.com` set, stores can be accessed at `{slug}.yourdomain.com` via subdomain routing (handled by Next.js middleware)
+- Merchants can also add a custom domain via Settings → Custom Domains
 
-- **Visual mode** — Craft.js drag-and-drop with block palette (Hero, Text, Product Grid, Image, etc.) and property inspector panel
-- **Code mode** — Monaco Editor (VS Code) for raw HTML/CSS/JS with syntax highlighting and live sandboxed preview
-- Switching from visual → code snapshots the page to HTML
-- Switching from code → visual is not supported (free-form code cannot be parsed back into a node tree)
-- Page content saved to `pages.content` (visual) or `pages.customCode` (code) via `storefront.pages.saveContent` tRPC mutation
+**Storefront routes:**
 
----
+| Route | Description |
+|---|---|
+| `/{slug}` | Home page — On Sale, Recommended, New Arrivals sections |
+| `/{slug}/products/{handle}` | Product detail with variant selector and reviews |
+| `/{slug}/cart` | Shopping cart |
+| `/{slug}/checkout` | Checkout (guest or account login) |
+| `/{slug}/orders` | Order tracking |
+| `/{slug}/account` | Customer account |
+| `/{slug}/contact` | Contact form |
+| `/{slug}/wishlist` | Wishlist |
+| `/{slug}/legal/privacy` | Privacy Policy |
+| `/{slug}/legal/terms` | Terms & Conditions |
+| `/{slug}/legal/disclaimer` | Disclaimer |
 
-### Gateway (`apps/gateway`) — Planned
-
-Hono reverse proxy that handles tenant resolution and routing.
-
-**Request flow:**
-1. Incoming request arrives at `*.zansify.com` or a custom domain
-2. Gateway reads `Host` header
-3. If `*.zansify.com` — extracts slug, looks up `tenants` table (Redis cache → Postgres, 5min TTL)
-4. If custom domain — looks up `domains` table for verified hostname → tenant
-5. Injects `X-KStack-Tenant-ID` and `X-KStack-Tenant-Slug` headers
-6. Proxies request to `apps/storefront`
+Legal pages are auto-generated from a comprehensive default template. Merchants can customise them from Settings → Legal Pages in the dashboard.
 
 ---
 
@@ -512,140 +601,64 @@ Hono reverse proxy that handles tenant resolution and routing.
 ### Entity Relationship Overview
 
 ```
-tenants ──< domains          (custom domains)
+tenants ──< domains
 tenants ──< merchantUsers >── users
 users ──< refreshTokens
 tenants ──< products ──< variants
 products ──< productImages
-tenants ──< collections ──<> products (via collectionProducts)
+tenants ──< collections ──<> products
 tenants ──< customers ──< orders ──< orderLineItems
 orders.lineItems >── variants
 tenants ──< themes ──< pages
+tenants ──< coupons
+tenants ──< shippingRates
+tenants ──< contactMessages
+frameworkConfig (key/value)
 ```
 
-### Tables
+### Key Tables
 
 #### `tenants`
-The root of every store.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `slug` | text | Unique, used in subdomain (`slug.zansify.com`) |
+| `slug` | text | Unique store slug |
 | `name` | text | Display name |
 | `plan` | enum | `free \| starter \| pro \| enterprise` |
-| `email` | text | Billing/contact email |
+| `email` | text | Contact email |
 | `logo_url` | text | Optional |
-| `created_at` | timestamptz | |
-| `updated_at` | timestamptz | |
-| `suspended_at` | timestamptz | `NULL` = active |
+| `maintenance_mode` | boolean | Shows maintenance page to visitors |
+| `frozen_at` | timestamptz | `NULL` = active; non-null = store frozen |
+| `legal_pages` | jsonb | `{ privacy?, terms?, disclaimer? }` custom markdown |
+| `contact_info` | jsonb | Phone, address, business hours etc. |
+| `social_links` | jsonb | Facebook, Instagram, Twitter etc. |
 
-#### `domains`
-Custom domain mappings.
+#### `products` / `variants`
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid | Primary key |
-| `tenant_id` | uuid | FK → tenants |
-| `hostname` | text | Unique, e.g. `shop.mybrand.com` |
-| `verified` | boolean | DNS verification status |
-| `ssl_status` | enum | `pending \| active \| failed` |
-| `verification_token` | text | TXT record value for DNS verification |
-
-#### `users`
-Platform user accounts (not shoppers).
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid | Primary key |
-| `email` | text | Unique |
-| `name` | text | |
-| `password_hash` | text | bcrypt, 12 rounds |
-| `avatar_url` | text | Optional |
-| `email_verified` | boolean | |
-
-#### `merchant_users`
-Links users to tenants with roles. A user can be staff on multiple shops.
-
-| Column | Type | Notes |
-|---|---|---|
-| `user_id` | uuid | FK → users |
-| `tenant_id` | uuid | FK → tenants |
-| `role` | enum | `owner \| admin \| staff` |
-
-#### `refresh_tokens`
-Server-side refresh token rotation.
-
-| Column | Type | Notes |
-|---|---|---|
-| `user_id` | uuid | FK → users |
-| `token_hash` | text | SHA-256 hash of the raw token |
-| `expires_at` | timestamptz | |
-| `revoked_at` | timestamptz | `NULL` = still valid |
-
-#### `products`
-
-| Column | Type | Notes |
-|---|---|---|
-| `tenant_id` | uuid | FK → tenants |
-| `title` | text | |
-| `description` | text | |
-| `handle` | text | URL-safe slug (auto-generated from title) |
-| `status` | enum | `draft \| active \| archived` |
-| `tags` | jsonb | `string[]` array |
-
-#### `variants`
-Each product has at least one variant (the "Default Title" variant is created automatically).
-
-| Column | Type | Notes |
-|---|---|---|
-| `product_id` | uuid | FK → products |
-| `tenant_id` | uuid | |
-| `sku` | text | Optional |
-| `price` | numeric(10,2) | |
-| `compare_price` | numeric(10,2) | Optional, for showing "was" price |
-| `inventory` | integer | Stock count |
-| `options` | jsonb | e.g. `{ "color": "red", "size": "M" }` |
+Products have one or more variants. Each variant has price, inventory, SKU, and option values (e.g. `{ color: "red", size: "M" }`).
 
 #### `orders`
 
 | Column | Type | Notes |
 |---|---|---|
-| `tenant_id` | uuid | FK → tenants |
-| `customer_id` | uuid | FK → customers (nullable) |
-| `order_number` | serial | Auto-incrementing per-database (not per-tenant — use for display only) |
-| `status` | enum | Fulfillment status |
-| `financial_status` | enum | Payment status |
-| `currency` | text | ISO 4217 code, default `ZAR` |
-| `subtotal` | numeric | Before tax + shipping |
-| `tax_total` | numeric | |
-| `shipping_total` | numeric | |
+| `status` | enum | `pending \| processing \| shipped \| delivered \| cancelled \| refunded` |
+| `financial_status` | enum | `pending \| paid \| refunded \| partially_refunded \| failed` |
 | `total` | numeric | Final amount charged |
 | `shipping_address` | jsonb | Address snapshot |
-| `billing_address` | jsonb | Address snapshot |
-| `stripe_payment_intent_id` | text | For reconciliation |
 
-#### `themes`
+#### `contact_messages`
 
-| Column | Type | Notes |
-|---|---|---|
-| `tenant_id` | uuid | FK → tenants |
-| `name` | text | Theme display name |
-| `is_active` | boolean | Only one theme should be active at a time |
-| `settings` | jsonb | `{ primaryColor, secondaryColor, accentColor, fontHeading, fontBody, borderRadius }` |
-
-#### `pages`
+Stores messages submitted through the storefront contact form.
 
 | Column | Type | Notes |
 |---|---|---|
-| `tenant_id` | uuid | FK → tenants |
-| `theme_id` | uuid | FK → themes |
-| `slug` | text | URL path, e.g. `/about` |
-| `type` | enum | `home \| product \| collection \| blog \| custom \| 404` |
-| `mode` | enum | `visual \| code` |
-| `content` | jsonb | Craft.js serialized node tree (visual mode) |
-| `custom_code` | jsonb | `{ html, css, js }` (code mode) |
-| `is_published` | boolean | Only published pages are shown on storefront |
+| `status` | enum | `new \| read \| replied` |
+| `name`, `email`, `subject`, `message` | text | |
+
+#### `framework_config`
+
+Internal key/value store used for install ID, telemetry notice state, and license cache.
 
 ---
 
@@ -653,14 +666,12 @@ Each product has at least one variant (the "Default Title" variant is created au
 
 All API calls go through tRPC at `POST http://localhost:3001/trpc/{procedure}`.
 
-When using the tRPC client (in the dashboard), calls are made automatically. For direct HTTP testing use the batch format:
-
 ```bash
-# Query example
+# Query
 curl http://localhost:3001/trpc/auth.me \
   -H "Authorization: Bearer <token>"
 
-# Mutation example
+# Mutation
 curl -X POST "http://localhost:3001/trpc/auth.login?batch=1" \
   -H "Content-Type: application/json" \
   -d '{"0":{"json":{"email":"you@example.com","password":"yourpassword"}}}'
@@ -673,25 +684,15 @@ curl -X POST "http://localhost:3001/trpc/auth.login?batch=1" \
 **Input:**
 ```typescript
 {
-  name: string;          // Full name
-  email: string;         // Valid email address
-  password: string;      // Min 8 characters
-  shopName: string;      // Display name for the store
-  shopSlug: string;      // URL slug: lowercase letters, numbers, hyphens (3–32 chars)
+  name: string;
+  email: string;
+  password: string;      // min 8 characters
+  shopName: string;
+  shopSlug: string;      // lowercase, hyphens, 3–32 chars
 }
 ```
 
-**Returns:**
-```typescript
-{
-  accessToken: string;   // JWT, 15 minute TTL
-  refreshToken: string;  // 30-day token, rotate via auth.refresh
-  user: { id, email, name };
-  tenant: { id, slug, name };
-}
-```
-
-**Errors:** `CONFLICT` if email or slug already taken.
+**Returns:** `{ accessToken, refreshToken, user, tenant }`
 
 ---
 
@@ -699,14 +700,9 @@ curl -X POST "http://localhost:3001/trpc/auth.login?batch=1" \
 
 **Type:** Public mutation
 
-**Input:**
-```typescript
-{ email: string; password: string; }
-```
+**Input:** `{ email: string; password: string; }`
 
 **Returns:** Same shape as `auth.register`.
-
-**Errors:** `UNAUTHORIZED` if credentials invalid. `FORBIDDEN` if shop is suspended.
 
 ---
 
@@ -714,17 +710,9 @@ curl -X POST "http://localhost:3001/trpc/auth.login?batch=1" \
 
 **Type:** Public mutation
 
-**Input:**
-```typescript
-{ refreshToken: string; }
-```
+**Input:** `{ refreshToken: string; }`
 
-**Returns:**
-```typescript
-{ accessToken: string; refreshToken: string; }
-```
-
-Old refresh token is immediately revoked. Store the new refresh token.
+**Returns:** `{ accessToken, refreshToken }` — old token is immediately revoked.
 
 ---
 
@@ -732,26 +720,7 @@ Old refresh token is immediately revoked. Store the new refresh token.
 
 **Type:** Protected query
 
-**Returns:**
-```typescript
-{
-  user: { id, email, name, avatarUrl };
-  tenant: { id, slug, name, plan } | null;
-}
-```
-
----
-
-### `auth.logout`
-
-**Type:** Protected mutation
-
-**Input:**
-```typescript
-{ refreshToken: string; }
-```
-
-Revokes the refresh token server-side. Always clear localStorage on the client regardless of the response.
+**Returns:** `{ user: { id, email, name }, tenant: { id, slug, name, plan } }`
 
 ---
 
@@ -759,26 +728,7 @@ Revokes the refresh token server-side. Always clear localStorage on the client r
 
 **Type:** Protected query
 
-**Input:**
-```typescript
-{
-  status?: "draft" | "active" | "archived";
-  limit?: number;   // 1–100, default 20
-  offset?: number;  // default 0
-}
-```
-
-**Returns:** `Product[]` scoped to authenticated tenant.
-
----
-
-### `products.get`
-
-**Type:** Protected query
-
-**Input:** `{ id: string }`
-
-**Returns:** `Product & { variants: Variant[]; images: ProductImage[] }`
+**Input:** `{ status?, limit?, offset? }`
 
 ---
 
@@ -786,36 +736,7 @@ Revokes the refresh token server-side. Always clear localStorage on the client r
 
 **Type:** Protected mutation
 
-**Input:**
-```typescript
-{
-  title: string;
-  description?: string | null;
-  handle?: string;    // Auto-generated from title if not provided
-  status?: "draft" | "active" | "archived";  // default "draft"
-  tags?: string[];
-}
-```
-
-Creates the product and one default variant with price 0.
-
----
-
-### `products.update`
-
-**Type:** Protected mutation
-
-**Input:** `{ id: string; data: Partial<CreateProductInput> }`
-
----
-
-### `products.delete`
-
-**Type:** Protected mutation
-
-**Input:** `{ id: string }`
-
-Cascades to variants, images, and collection memberships.
+**Input:** `{ title, description?, handle?, status?, tags? }`
 
 ---
 
@@ -827,15 +748,7 @@ Cascades to variants, images, and collection memberships.
 ```typescript
 {
   productId: string;
-  data: {
-    sku?: string | null;
-    title: string;
-    price: number;
-    comparePrice?: number | null;
-    inventory?: number;
-    options?: Record<string, string>;   // e.g. { color: "red", size: "M" }
-    imageUrl?: string | null;
-  }
+  data: { title, price, sku?, comparePrice?, inventory?, options?, imageUrl? }
 }
 ```
 
@@ -845,25 +758,7 @@ Cascades to variants, images, and collection memberships.
 
 **Type:** Protected query
 
-**Input:**
-```typescript
-{
-  status?: OrderStatus;
-  financialStatus?: FinancialStatus;
-  limit?: number;
-  offset?: number;
-}
-```
-
----
-
-### `orders.get`
-
-**Type:** Protected query
-
-**Input:** `{ id: string }`
-
-**Returns:** `Order & { lineItems: OrderLineItem[] }`
+**Input:** `{ status?, financialStatus?, limit?, offset? }`
 
 ---
 
@@ -871,23 +766,7 @@ Cascades to variants, images, and collection memberships.
 
 **Type:** Admin mutation
 
-**Input:** `{ id: string; status: OrderStatus }`
-
----
-
-### `orders.customers`
-
-**Type:** Protected query
-
-Returns paginated customer list for the tenant.
-
----
-
-### `tenant.get`
-
-**Type:** Protected query
-
-Returns the full tenant object for the authenticated user's shop.
+**Input:** `{ id: string; status: OrderStatus; reason?: string }`
 
 ---
 
@@ -895,120 +774,43 @@ Returns the full tenant object for the authenticated user's shop.
 
 **Type:** Admin mutation
 
-**Input:** `{ name?: string; email?: string; logoUrl?: string | null }`
-
----
-
-### `tenant.domains.list`
-
-**Type:** Protected query
-
-Returns all custom domains registered for the tenant.
-
----
-
-### `tenant.domains.add`
-
-**Type:** Admin mutation
-
-**Input:** `{ hostname: string }`
-
-Creates a domain record with a `verificationToken`. The merchant must add a DNS TXT record `_kstack-verify=<token>` to verify ownership.
-
----
-
-### `tenant.domains.remove`
-
-**Type:** Admin mutation
-
-**Input:** `{ id: string }`
-
----
-
-### `storefront.themes.list`
-
-**Type:** Protected query
-
-Returns all themes for the tenant.
-
----
-
-### `storefront.themes.create`
-
-**Type:** Admin mutation
-
-**Input:** `{ name: string }`
-
----
-
-### `storefront.themes.activate`
-
-**Type:** Admin mutation
-
-**Input:** `{ id: string }`
-
-Deactivates all other themes and activates the specified one.
-
----
-
-### `storefront.themes.updateSettings`
-
-**Type:** Admin mutation
-
 **Input:**
 ```typescript
 {
-  id: string;
-  settings: {
-    primaryColor?: string;
-    secondaryColor?: string;
-    accentColor?: string;
-    fontHeading?: string;
-    fontBody?: string;
-    borderRadius?: string;
-  }
+  name?: string;
+  email?: string;
+  logoUrl?: string | null;
+  socialLinks?: Record<string, string>;
+  contactInfo?: Record<string, string>;
+  legalPages?: { privacy?: string; terms?: string; disclaimer?: string };
 }
 ```
 
 ---
 
-### `storefront.pages.create`
+### `tenant.setMaintenance`
 
 **Type:** Admin mutation
 
-**Input:**
-```typescript
-{
-  themeId: string;
-  title: string;
-  slug: string;
-  type?: "home" | "product" | "collection" | "blog" | "custom" | "404";
-}
-```
+**Input:** `{ enabled: boolean }`
 
 ---
 
-### `storefront.pages.saveContent`
+### `tenant.setFrozen`
 
 **Type:** Admin mutation
 
-**Input:**
-```typescript
-{
-  id: string;
-  mode: "visual" | "code";
-  content?: Record<string, unknown>;           // Craft.js node tree
-  customCode?: { html: string; css: string; js: string; };
-}
-```
+**Input:** `{ frozen: boolean }`
 
 ---
 
-### `storefront.pages.publish`
+### `public.resolveShop`
 
-**Type:** Admin mutation
+**Type:** Public query
 
-**Input:** `{ id: string; isPublished: boolean }`
+**Input:** `{ slug: string }`
+
+Returns the public shop data used by the storefront. Returns `NOT_FOUND` if the store is frozen.
 
 ---
 
@@ -1016,25 +818,16 @@ Deactivates all other themes and activates the specified one.
 
 ### Token Strategy
 
-KStack uses a dual-token JWT strategy:
-
-- **Access token** — Short-lived (15 minutes), signed with `JWT_SECRET`, sent as `Authorization: Bearer <token>` on every request. Never stored in a cookie.
-- **Refresh token** — Long-lived (30 days), stored server-side as a SHA-256 hash in `refresh_tokens`. The raw token is sent to the client once and stored in `localStorage`. Used only to obtain new access tokens via `auth.refresh`.
+- **Access token** — 15-minute TTL, signed with `JWT_SECRET`, sent as `Authorization: Bearer <token>`
+- **Refresh token** — 30-day TTL, stored server-side as a SHA-256 hash, rotated on every use
 
 ### Token Rotation
 
-Every call to `auth.refresh`:
-1. Looks up the token hash in the database
-2. Verifies it is not revoked and not expired
-3. Marks the old token as revoked (`revoked_at = NOW()`)
-4. Issues a new access token and a new refresh token
-5. Returns both to the client
-
-If a refresh token is presented that has already been revoked, it may indicate token theft — the system rejects the request.
+Every `auth.refresh` call revokes the old token and issues a fresh pair. A revoked token presented again signals potential theft and is rejected.
 
 ### Frontend Storage
 
-Auth state is persisted to `localStorage` under the key `kstack_auth`:
+Auth state persisted to `localStorage` under key `kstack_auth`:
 
 ```typescript
 {
@@ -1045,42 +838,79 @@ Auth state is persisted to `localStorage` under the key `kstack_auth`:
 }
 ```
 
-The tRPC client reads `accessToken` from localStorage before every request and attaches it as a Bearer header.
-
 ---
 
 ## Multi-Tenancy
 
-Every database table includes a `tenant_id` column. All queries in `protectedProcedure` and `adminProcedure` are automatically scoped to `ctx.tenantId`, which is extracted from the JWT payload.
-
-Example — products are always fetched for the authenticated tenant only:
+Every table has a `tenant_id` column. All tRPC procedures scope queries to `ctx.tenantId` extracted from the JWT — a merchant can never access another merchant's data even with a valid token.
 
 ```typescript
+// Always scoped — impossible to leak cross-tenant
 await ctx.db.select().from(products).where(eq(products.tenantId, ctx.tenantId));
 ```
-
-This ensures:
-- No merchant can access another merchant's data, even with a valid JWT
-- A single database serves all tenants (no schema-per-tenant overhead)
-- Row-level filtering is enforced at the application layer on every query
 
 ---
 
 ## Role-Based Access Control
 
-| Role | Description | Can do |
-|---|---|---|
-| `owner` | Shop creator | Everything — billing, staff, delete shop |
-| `admin` | Trusted staff | Products, orders, themes, domains, settings |
-| `staff` | Basic access | View products, process orders |
+| Role | Description |
+|---|---|
+| `owner` | Full access including billing, staff management, and store deletion |
+| `admin` | Products, orders, settings, domains — everything except store deletion |
+| `staff` | Read access, order processing |
 
-In tRPC:
-- `protectedProcedure` — any role
+- `protectedProcedure` — any authenticated role
 - `adminProcedure` — `owner` or `admin` only
 
-In Hono middleware:
-- `requireAuth` — verifies Bearer token, sets `ctx.var.user`
-- `requireAdminRole` — additionally checks `role === "owner" || "admin"`
+---
+
+## CLI Reference
+
+KStack ships two CLIs.
+
+### `create-kstack-app` — project creator
+
+Run with `npx` — no install needed.
+
+```bash
+npx create-kstack-app                        # interactive setup
+npx create-kstack-app my-shop                # pre-fill project name
+npx create-kstack-app my-shop --source ./kstack-framework  # use local copy
+npx create-kstack-app --skip-install         # skip pnpm install step
+npx create-kstack-app --skip-git             # skip git init
+npx create-kstack-app --version              # print version
+```
+
+### `kstack` — in-project CLI
+
+Run inside any KStack project with `pnpm kstack`.
+
+```bash
+# Scaffold a new module (generates router, dashboard page, DB schema, wires everything up)
+pnpm kstack module:create KStack_Loyalty
+pnpm kstack module:create KStack_Blog --description "Blog posts and articles"
+pnpm kstack module:create KStack_Referrals --no-schema    # skip DB schema
+pnpm kstack module:create KStack_Widget --dry-run         # preview without writing files
+
+# List all registered modules and their status
+pnpm kstack module:list
+
+# Show framework version, module count, and license plan
+pnpm kstack info
+```
+
+**What `module:create` generates:**
+
+| File | Description |
+|---|---|
+| `apps/api/src/routers/{name}.ts` | tRPC router with `list`, `get`, `create`, `update`, `delete` stubs |
+| `apps/dashboard/src/app/[slug]/{name}/page.tsx` | Dashboard page with table + create form |
+| `packages/db/src/schema/{name}.ts` | Drizzle table with `id`, `tenantId`, `name`, `createdAt`, `updatedAt` |
+| Patches `apps/api/src/router.ts` | Adds import + registers router in `appRouter` |
+| Patches `packages/db/src/schema/index.ts` | Adds `export * from "./{name}"` |
+| Patches `apps/dashboard/src/components/sidebar.tsx` | Adds nav item |
+| Patches `apps/dashboard/src/lib/modules.ts` | Registers module in the Modules settings list |
+| Updates `modules.json` | Registers module in the manifest |
 
 ---
 
@@ -1090,113 +920,109 @@ In Hono middleware:
 # Start all dev servers
 pnpm dev
 
-# Start only the API
+# Start individual apps
 pnpm --filter=@kstack/api dev
-
-# Start only the dashboard
 pnpm --filter=@kstack/dashboard dev
+pnpm --filter=@kstack/storefront dev
 
-# Build all packages
+# Build all
 pnpm build
 
-# Type-check all packages
+# Type-check all
 pnpm typecheck
 
-# Lint everything
+# Lint + format
 pnpm lint
-
-# Format everything
 pnpm format
 
 # Database
-pnpm db:push        # Push schema to DB (dev, no migration files)
-pnpm db:generate    # Generate SQL migration files from schema diff
+pnpm db:push        # Push schema to DB (dev — no migration files)
+pnpm db:generate    # Generate SQL migration files
 pnpm db:migrate     # Apply migration files
 pnpm db:studio      # Open Drizzle Studio at localhost:4983
+pnpm db:seed        # Seed demo store
 
 # Infrastructure
 docker compose -f infra/docker-compose.yml up -d    # Start Postgres
 docker compose -f infra/docker-compose.yml down     # Stop Postgres
-docker compose -f infra/docker-compose.yml down -v  # Stop + delete all data
+docker compose -f infra/docker-compose.yml down -v  # Stop + wipe data
 ```
 
 ---
 
 ## Deployment
 
-> Production deployment guide is a work in progress. The following describes the intended target architecture.
-
 ### Services to deploy
 
 | Service | Recommended platform |
 |---|---|
 | `apps/api` | Railway, Fly.io, or any Node.js host |
-| `apps/dashboard` | Vercel (Next.js native) |
-| `apps/storefront` | Vercel (Next.js native) |
-| `apps/gateway` | Cloudflare Workers (Hono is edge-compatible) |
-| `apps/worker` | Railway or a VPS |
+| `apps/dashboard` | Vercel |
+| `apps/storefront` | Vercel |
 | PostgreSQL | Neon, Supabase, or managed RDS |
-| Redis | Upstash (serverless), Redis Cloud, or managed ElastiCache |
-| File storage | Cloudflare R2 (no egress fees) |
+| File storage | Cloudflare R2 (zero egress fees) |
 
-### DNS setup
+### DNS setup for subdomain routing
 
-1. Point `*.zansify.com` as a wildcard CNAME to the gateway
-2. Enable Cloudflare proxy on the wildcard record for SSL termination
-3. Merchants add a CNAME for their custom domain pointing to `shops.zansify.com`
-4. The domain verification worker checks for a DNS TXT record `_kstack-verify=<token>`
+1. Add a wildcard DNS record: `*.yourdomain.com` → CNAME to your storefront host
+2. Set `NEXT_PUBLIC_ROOT_DOMAIN=yourdomain.com` on your storefront deployment
+3. Set `ROOT_DOMAIN=yourdomain.com` on your API deployment
+4. For merchant custom domains: the merchant adds a CNAME `shop.theirdomain.com → yourdomain.com`, then verifies via the dashboard by adding a DNS TXT record `_kstack-verify=<token>`
 
-### Required environment variables for production
+### Required production environment variables
 
-- Set `NODE_ENV=production`
-- Generate strong random values for `JWT_SECRET` and `JWT_REFRESH_SECRET` (32+ chars)
-- Set `DATABASE_URL` to your production PostgreSQL connection string
-- Set `REDIS_URL` to your production Redis URL
-- Configure all `STORAGE_*` variables for file uploads
-- Configure `STRIPE_*` variables for payments
+```bash
+# Generate strong secrets
+openssl rand -base64 48   # run twice — one for JWT_SECRET, one for JWT_REFRESH_SECRET
+
+NODE_ENV=production
+DATABASE_URL=postgresql://user:password@host:5432/kstack
+JWT_SECRET=<generated>
+JWT_REFRESH_SECRET=<generated>
+NEXT_PUBLIC_ROOT_DOMAIN=yourdomain.com
+ROOT_DOMAIN=yourdomain.com
+ALLOWED_ORIGINS=https://dashboard.yourdomain.com,https://yourdomain.com
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+EMAIL_FROM=noreply@yourdomain.com
+RESEND_API_KEY=<your key>
+```
 
 ---
 
 ## Roadmap
 
-### Phase 1 — Foundation (complete)
+### Complete
 - [x] Monorepo setup (Turborepo + pnpm)
-- [x] Database schema (all tables)
+- [x] Full database schema
 - [x] Auth package (JWT, bcrypt, middleware)
-- [x] Shared types (Zod schemas)
-- [x] API server (tRPC — auth, products, orders, tenant, storefront)
-- [x] Dashboard (login, register, overview, products, orders)
+- [x] API server (tRPC — all modules)
+- [x] Merchant dashboard
+- [x] Storefront (SSR, subdomain routing, custom domains)
+- [x] Product management with variants, images, collections
+- [x] Order management with fulfilment and notes
+- [x] Customer accounts and guest checkout
+- [x] Paystack payment integration
+- [x] Coupon and discount codes
+- [x] Shipping rate configuration
+- [x] Product reviews (purchase-gated)
+- [x] Contact form with inbox
+- [x] Store controls (maintenance mode, freeze, delete)
+- [x] Legal pages (Privacy, Terms, Disclaimer)
+- [x] License plan system
+- [x] Anonymous telemetry with opt-out
+- [x] `create-kstack-app` — interactive project creator (`npx create-kstack-app`)
+- [x] `kstack` CLI — module scaffold, `module:list`, `info` commands
 
-### Phase 2 — Storefront (next)
-- [ ] `apps/gateway` — subdomain + custom domain resolver
-- [ ] `apps/storefront` — SSR tenant shop with default theme
-- [ ] Cart (Redis-backed session cart)
-- [ ] Product listing and detail pages
-
-### Phase 3 — Checkout & Payments
-- [ ] Stripe Connect merchant onboarding
-- [ ] Checkout page (Stripe Payment Element)
-- [ ] Stripe webhook handler → order financial status updates
-- [ ] Order confirmation email (Resend + BullMQ worker)
-
-### Phase 4 — Page Builder
-- [ ] `apps/builder` — Craft.js drag-and-drop editor
-- [ ] Core blocks: Hero, Text, Product Grid, Image, Button, Spacer
-- [ ] Monaco Editor for HTML/CSS/JS code mode
-- [ ] Sandboxed iframe preview for code mode
-- [ ] Publish flow: dashboard → builder → storefront
-
-### Phase 5 — Custom Domains & Growth
-- [ ] DNS verification worker
-- [ ] Cloudflare API integration for SSL
-- [ ] Analytics dashboard (revenue, orders, top products)
-- [ ] Staff invitation flow
-
-### Future
+### In Progress / Planned
+- [ ] Page builder (Craft.js drag-and-drop)
+- [ ] Monaco code editor for raw HTML/CSS/JS pages
+- [ ] Analytics dashboard (revenue charts, top products)
 - [ ] Multi-currency support
-- [ ] App marketplace / plugin system
+- [ ] Staff invitation via email
+- [ ] DNS verification worker
+- [ ] Plugin / app marketplace
 - [ ] Mobile merchant app (Expo)
-- [ ] B2B / wholesale pricing
+- [ ] B2B / wholesale pricing tiers
 - [ ] AI-assisted product descriptions
 
 ---
@@ -1205,12 +1031,14 @@ docker compose -f infra/docker-compose.yml down -v  # Stop + delete all data
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Make your changes and ensure `pnpm typecheck` and `pnpm lint` pass
-4. Open a pull request with a clear description
+3. Follow the module naming convention in [CLAUDE.md](CLAUDE.md)
+4. Ensure `pnpm typecheck` and `pnpm lint` pass
+5. Open a pull request with a clear description of what and why
 
 ---
 
 ## License
 
-MIT
-# kstack
+MIT — free to use, modify, and distribute. See [LICENSE](LICENSE) for the full text.
+
+For commercial deployments with Pro or Enterprise features, a license key is required. See [License Plans](#license-plans).

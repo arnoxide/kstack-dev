@@ -1,4 +1,3 @@
-import Image from "next/image";
 
 type SocialLinks = {
   facebook?: string | null;
@@ -15,6 +14,7 @@ interface ShopFooterProps {
       name: string;
       slug: string;
       socialLinks?: SocialLinks | null;
+      legalPages?: { privacy?: string; terms?: string; disclaimer?: string } | null;
     };
   };
 }
@@ -81,35 +81,47 @@ export function ShopFooter({ shop }: ShopFooterProps) {
   const socialEntries = Object.entries(SOCIAL_ICONS).filter(
     ([key]) => !!(socials as Record<string, string | null | undefined>)[key],
   );
+  const legal = shop.tenant.legalPages;
+  const legalLinks = [
+    { key: "privacy", label: "Privacy Policy", href: `/${shop.tenant.slug}/legal/privacy` },
+    { key: "terms", label: "Terms & Conditions", href: `/${shop.tenant.slug}/legal/terms` },
+    { key: "disclaimer", label: "Disclaimer", href: `/${shop.tenant.slug}/legal/disclaimer` },
+  ].filter(({ key }) => !legal || (legal as Record<string, string | undefined>)[key] !== undefined || true);
 
   return (
     <footer className="border-t border-gray-200 bg-gray-50 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} {shop.tenant.name}. All rights reserved.</p>
+        <div className="flex flex-col gap-4 text-sm text-gray-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>&copy; {new Date().getFullYear()} {shop.tenant.name}. All rights reserved.</p>
 
-          <div className="flex items-center gap-4">
-            {socialEntries.length > 0 && (
-              <div className="flex items-center gap-3">
-                {socialEntries.map(([key, { icon: Icon, label }]) => (
-                  <a
-                    key={key}
-                    href={(socials as Record<string, string>)[key]}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    aria-label={label}
-                    className="text-gray-400 hover:text-gray-700 transition-colors"
-                  >
-                    <Icon />
-                  </a>
-                ))}
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {socialEntries.length > 0 && (
+                <div className="flex items-center gap-3">
+                  {socialEntries.map(([key, { icon: Icon, label }]) => (
+                    <a
+                      key={key}
+                      href={(socials as Record<string, string>)[key]}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label={label}
+                      className="text-gray-400 hover:text-gray-700 transition-colors"
+                    >
+                      <Icon />
+                    </a>
+                  ))}
+                </div>
+              )}
 
-            <a href="https://zansify.com" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 opacity-70 hover:opacity-100 transition-opacity">
-              <span className="text-xs text-gray-400">Powered by</span>
-              <Image src="/zansify-logo.png" alt="Zansify" width={72} height={24} unoptimized />
-            </a>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-4 border-t border-gray-100 pt-4 flex-wrap">
+            {legalLinks.map(({ key, label, href }) => (
+              <a key={key} href={href} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">
+                {label}
+              </a>
+            ))}
           </div>
         </div>
       </div>

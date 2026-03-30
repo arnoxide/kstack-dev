@@ -90,6 +90,7 @@ export const publicRouter = router({
           socialLinks: tenant.socialLinks ?? null,
           contactInfo: tenant.contactInfo ?? null,
           maintenanceMode: tenant.maintenanceMode,
+          legalPages: tenant.legalPages ?? null,
         },
         theme: activeTheme ?? null,
         analytics: {

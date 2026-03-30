@@ -254,12 +254,12 @@ async function seed() {
     .values({
       slug: DEMO_SLUG,
       name: "Demo Store",
-      email: "demo@zansify.com",
+      email: "demo@example.com",
       plan: "pro",
     })
     .onConflictDoUpdate({
       target: tenants.slug,
-      set: { name: "Demo Store", email: "demo@zansify.com" },
+      set: { name: "Demo Store", email: "demo@example.com" },
     })
     .returning();
   const tenantId = tenant.id;

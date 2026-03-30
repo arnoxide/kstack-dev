@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { trpc } from "@/lib/trpc";
 import { setAuthState } from "@/lib/auth-store";
 
@@ -59,7 +58,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Image src="/zansify-logo.png" alt="Zansify" width={180} height={60} className="mx-auto mb-4" unoptimized />
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">KStack</h1>
           <p className="mt-2 text-gray-600">Create your free online store</p>
         </div>
 
@@ -139,7 +138,7 @@ export default function RegisterPage() {
                     placeholder="my-store"
                   />
                   <span className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-l border-gray-300">
-                    .zansify.com
+                    .{process.env["NEXT_PUBLIC_ROOT_DOMAIN"] ?? "yourdomain.com"}
                   </span>
                 </div>
               </div>

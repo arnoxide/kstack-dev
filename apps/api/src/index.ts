@@ -6,7 +6,8 @@ import { logger } from "hono/logger";
 import { createContext } from "./context";
 import { appRouter } from "./router";
 import { verifyPaystackWebhook } from "./lib/paystack";
-import { sendTelemetry } from "./lib/telemetry";
+import { runTelemetry } from "./lib/telemetry";
+import { initLicense } from "./lib/license";
 import { db, integrations, orders } from "@kstack/db";
 import { and, eq } from "drizzle-orm";
 
@@ -15,7 +16,7 @@ const app = new Hono();
 // Middleware
 app.use("*", logger());
 const isProd = process.env["NODE_ENV"] === "production";
-const ROOT_DOMAIN = process.env["ROOT_DOMAIN"] ?? "zansify.com";
+const ROOT_DOMAIN = process.env["ROOT_DOMAIN"] ?? "localhost";
 
 // Explicit extra origins (comma-separated) — e.g. a custom dashboard URL
 const explicitOrigins = new Set(
@@ -116,9 +117,11 @@ app.all("/trpc/*", (c) => {
 const PORT = Number(process.env["API_PORT"] ?? 3001);
 
 serve({ fetch: app.fetch, port: PORT }, (info) => {
-  console.log(`API server running on http://localhost:${info.port}`);
-  // Fire-and-forget — opt out with KSTACK_TELEMETRY=false
-  sendTelemetry();
+  console.log(`\nKStack API  →  http://localhost:${info.port}`);
+  // Validate license and print plan (fire-and-forget — never blocks startup)
+  initLicense().catch(() => null);
+  // Anonymous usage telemetry — opt out with KSTACK_TELEMETRY=false
+  runTelemetry().catch(() => null);
 });
 
 export type { AppRouter } from "./router";

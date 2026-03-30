@@ -54,12 +54,14 @@ function patch(rel: string, transform: (src: string) => string, dryRun: boolean)
 function usage() {
   console.log([
     "",
-    "KStack Module Scaffold",
+    "KStack CLI",
     "",
-    "Usage:",
-    "  pnpm kstack module:create <Vendor_ModuleName> [options]",
+    "Commands:",
+    "  module:create <Vendor_ModuleName>   Scaffold a new module",
+    "  module:list                         List all registered modules",
+    "  info                                Show framework info and license status",
     "",
-    "Options:",
+    "Options (module:create):",
     "  --description <text>   Module description  (default: '<ModuleName> module')",
     "  --no-api               Skip API router generation",
     "  --no-dashboard         Skip dashboard page generation",
@@ -69,8 +71,75 @@ function usage() {
     "",
     "Examples:",
     "  pnpm kstack module:create KStack_Loyalty",
-    "  pnpm kstack module:create KStack_Blog --description 'Blog posts and articles' --no-schema",
+    "  pnpm kstack module:create KStack_Blog --description 'Blog posts and articles'",
     "  pnpm kstack module:create KStack_Referrals --dry-run",
+    "  pnpm kstack module:list",
+    "  pnpm kstack info",
+    "",
+  ].join("\n"));
+}
+
+// ─── module:list ─────────────────────────────────────────────────────────────
+
+function cmdModuleList() {
+  const modulesJson = JSON.parse(read("modules.json")) as {
+    vendor: string;
+    modules: Array<{ name: string; description: string; status: string; version: string }>;
+  };
+
+  const modules = modulesJson.modules;
+  if (!modules.length) {
+    console.log("\nNo modules registered.\n");
+    return;
+  }
+
+  const active   = modules.filter((m) => m.status === "active");
+  const disabled = modules.filter((m) => m.status !== "active");
+
+  console.log(`\nKStack Modules  (${modules.length} total)\n`);
+  console.log(
+    "  " + ["Name".padEnd(32), "Version".padEnd(10), "Status".padEnd(10), "Description"].join("  "),
+  );
+  console.log("  " + "-".repeat(90));
+
+  for (const m of [...active, ...disabled]) {
+    const statusLabel = m.status === "active" ? "active" : m.status;
+    console.log(
+      "  " + [
+        m.name.padEnd(32),
+        (m.version ?? "—").padEnd(10),
+        statusLabel.padEnd(10),
+        m.description,
+      ].join("  "),
+    );
+  }
+  console.log();
+}
+
+// ─── info ─────────────────────────────────────────────────────────────────────
+
+function cmdInfo() {
+  const pkg = JSON.parse(read("package.json")) as { version?: string; name?: string };
+  const modulesJson = JSON.parse(read("modules.json")) as {
+    modules: Array<{ status: string }>;
+  };
+
+  const version = pkg.version ?? "unknown";
+  const moduleCount = modulesJson.modules.length;
+  const activeCount = modulesJson.modules.filter((m) => m.status === "active").length;
+  const licenseKey  = process.env["KSTACK_LICENSE_KEY"] ?? "(none)";
+  const plan        = licenseKey !== "(none)" ? "Pro/Enterprise (unvalidated — start API to verify)" : "Community (free)";
+
+  console.log([
+    "",
+    "KStack Framework",
+    "",
+    `  Version     : ${version}`,
+    `  Modules     : ${activeCount} active / ${moduleCount} total`,
+    `  License key : ${licenseKey === "(none)" ? licenseKey : licenseKey.slice(0, 8) + "…"}`,
+    `  Plan        : ${plan}`,
+    `  Docs        : https://kstack.dev/docs`,
+    `  Pricing     : https://kstack.dev/pricing`,
     "",
   ].join("\n"));
 }
@@ -81,6 +150,18 @@ const rawArgs = process.argv.slice(2);
 
 if (!rawArgs.length || rawArgs[0] === "--help" || rawArgs[0] === "-h") {
   usage();
+  process.exit(0);
+}
+
+// ─── Command dispatch ────────────────────────────────────────────────────────
+
+if (rawArgs[0] === "module:list") {
+  cmdModuleList();
+  process.exit(0);
+}
+
+if (rawArgs[0] === "info") {
+  cmdInfo();
   process.exit(0);
 }
 

@@ -26,6 +26,11 @@ export const tenantRouter = router({
         logoUrl: z.string().url().nullable().optional(),
         socialLinks: z.record(z.string()).optional(),
         contactInfo: z.record(z.string()).optional(),
+        legalPages: z.object({
+          privacy: z.string().optional(),
+          terms: z.string().optional(),
+          disclaimer: z.string().optional(),
+        }).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

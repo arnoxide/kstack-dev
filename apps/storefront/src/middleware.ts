@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // The apex domain — subdomains of this are treated as store slugs.
-// Set NEXT_PUBLIC_ROOT_DOMAIN=zansify.com in your Vercel env vars.
-const ROOT_DOMAIN = process.env["NEXT_PUBLIC_ROOT_DOMAIN"] ?? "zansify.com";
+// Set NEXT_PUBLIC_ROOT_DOMAIN=yourdomain.com in your env vars.
+const ROOT_DOMAIN = process.env["NEXT_PUBLIC_ROOT_DOMAIN"] ?? "localhost";
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone();
@@ -28,7 +28,7 @@ export function middleware(req: NextRequest) {
     host !== ROOT_DOMAIN;
 
   if (isSubdomain) {
-    const slug = host.slice(0, -(ROOT_DOMAIN.length + 1)); // strip ".zansify.com"
+    const slug = host.slice(0, -(ROOT_DOMAIN.length + 1)); // strip ".<ROOT_DOMAIN>"
 
     // Strip double-slug: Next.js internal links use "/{slug}/..." hrefs.
     // When those are fetched on the subdomain the middleware would prepend

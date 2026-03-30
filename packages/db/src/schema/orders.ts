@@ -29,6 +29,8 @@ export const customers = pgTable("customers", {
   } | null>(),
   totalOrders: integer("total_orders").notNull().default(0),
   totalSpent: numeric("total_spent", { precision: 12, scale: 2 }).notNull().default("0"),
+  twoFactorEnabled: integer("two_factor_enabled").notNull().default(0),
+  twoFactorSecret: text("two_factor_secret"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

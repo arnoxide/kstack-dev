@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -188,7 +187,7 @@ export function Sidebar({ slug }: { slug: string }) {
     <aside className="w-56 flex-shrink-0 bg-gray-900 text-gray-100 h-screen overflow-y-auto flex flex-col">
       {/* Logo */}
       <div className="px-4 py-4 border-b border-gray-800">
-        <Image src="/zansify-logo.png" alt="Zansify" width={110} height={36} className="mb-2 brightness-0 invert" unoptimized />
+        <span className="text-white font-bold text-lg tracking-tight mb-2 block">KStack</span>
         <p className="text-xs text-gray-400 truncate">{auth.tenant?.name ?? slug}</p>
       </div>
 
