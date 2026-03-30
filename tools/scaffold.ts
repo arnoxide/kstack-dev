@@ -5,11 +5,8 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
-import * as readline from "node:readline/promises";
 
-const ROOT = join(fileURLToPath(import.meta.url), "..", "..");
+const ROOT = join(__dirname, "..");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -79,150 +76,6 @@ function usage() {
     "  pnpm kstack module:create KStack_Referrals --dry-run",
     "  pnpm kstack module:list",
     "  pnpm kstack info",
-    "",
-  ].join("\n"));
-}
-
-// ─── store:create ─────────────────────────────────────────────────────────────
-
-async function cmdStoreCreate() {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-  const ask = async (prompt: string, hidden = false): Promise<string> => {
-    if (hidden) {
-      process.stdout.write(prompt);
-      return new Promise((resolve) => {
-        const stdin = process.stdin;
-        stdin.setRawMode?.(true);
-        stdin.resume();
-        stdin.setEncoding("utf-8");
-        let input = "";
-        stdin.on("data", function onData(ch: string) {
-          if (ch === "\r" || ch === "\n") {
-            stdin.setRawMode?.(false);
-            stdin.pause();
-            stdin.removeListener("data", onData);
-            process.stdout.write("\n");
-            resolve(input);
-          } else if (ch === "\u0003") {
-            process.exit(1);
-          } else if (ch === "\u007f") {
-            if (input.length > 0) {
-              input = input.slice(0, -1);
-              process.stdout.write("\b \b");
-            }
-          } else {
-            input += ch;
-            process.stdout.write("*");
-          }
-        });
-      });
-    }
-    const answer = await rl.question(prompt);
-    return answer.trim();
-  };
-
-  console.log("\n  KStack — Create a new store\n");
-
-  const name     = await ask("  Owner name    : ");
-  const email    = await ask("  Owner email   : ");
-  const password = await ask("  Password      : ", true);
-  const confirm  = await ask("  Confirm       : ", true);
-
-  if (password !== confirm) {
-    console.error("\n  Error: Passwords do not match.\n");
-    rl.close();
-    process.exit(1);
-  }
-  if (password.length < 8) {
-    console.error("\n  Error: Password must be at least 8 characters.\n");
-    rl.close();
-    process.exit(1);
-  }
-
-  const shopName = await ask("  Shop name     : ");
-  const suggested = shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const shopSlug  = (await ask(`  Shop URL slug [${suggested}]: `)) || suggested;
-
-  rl.close();
-
-  if (!name || !email || !shopName || !shopSlug) {
-    console.error("\n  Error: All fields are required.\n");
-    process.exit(1);
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    console.error("\n  Error: Invalid email address.\n");
-    process.exit(1);
-  }
-  if (!/^[a-z0-9-]+$/.test(shopSlug)) {
-    console.error("\n  Error: Slug may only contain lowercase letters, numbers, and hyphens.\n");
-    process.exit(1);
-  }
-
-  console.log("\n  Creating store...");
-
-  // Dynamically import DB and auth — avoids loading them for other CLI commands
-  const [{ db }, schema, { eq }, bcrypt] = await Promise.all([
-    import("@kstack/db/client"),
-    import("@kstack/db/schema"),
-    import("drizzle-orm"),
-    import("bcryptjs"),
-  ] as const);
-
-  const { users, merchantUsers, tenants } = schema;
-
-  // Check for conflicts
-  const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (existingUser) {
-    console.error("\n  Error: An account with that email already exists.\n");
-    process.exit(1);
-  }
-
-  const [existingTenant] = await db.select().from(tenants).where(eq(tenants.slug, shopSlug)).limit(1);
-  if (existingTenant) {
-    console.error(`\n  Error: The slug "${shopSlug}" is already taken. Choose a different one.\n`);
-    process.exit(1);
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const result = await db.transaction(async (tx) => {
-    const [newUser] = await tx
-      .insert(users)
-      .values({ email, name, passwordHash })
-      .returning();
-
-    if (!newUser) throw new Error("Failed to create user");
-
-    const [newTenant] = await tx
-      .insert(tenants)
-      .values({ slug: shopSlug, name: shopName, email })
-      .returning();
-
-    if (!newTenant) throw new Error("Failed to create tenant");
-
-    await tx.insert(merchantUsers).values({
-      userId: newUser.id,
-      tenantId: newTenant.id,
-      role: "owner",
-    });
-
-    return { user: newUser, tenant: newTenant };
-  });
-
-  const rootDomain = process.env["ROOT_DOMAIN"] ?? "localhost:3000";
-  const dashUrl    = `http://${result.tenant.slug}.${rootDomain}`;
-
-  console.log([
-    "",
-    "  Store created successfully!",
-    "",
-    `  Shop name : ${result.tenant.name}`,
-    `  Shop slug : ${result.tenant.slug}`,
-    `  Email     : ${result.user.email}`,
-    `  Dashboard : ${dashUrl}`,
-    "",
-    "  Log in with the email and password you just set.",
     "",
   ].join("\n"));
 }
@@ -304,8 +157,14 @@ if (!rawArgs.length || rawArgs[0] === "--help" || rawArgs[0] === "-h") {
 // ─── Command dispatch ────────────────────────────────────────────────────────
 
 if (rawArgs[0] === "store:create") {
-  await cmdStoreCreate();
-  process.exit(0);
+  // Delegate to standalone script — keeps DB imports in their own ESM context
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { spawnSync } = require("node:child_process") as typeof import("node:child_process");
+  const result = spawnSync("tsx", [join(__dirname, "store-create.ts")], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  process.exit(result.status ?? 1);
 }
 
 if (rawArgs[0] === "module:list") {
