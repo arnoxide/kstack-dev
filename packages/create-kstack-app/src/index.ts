@@ -18,9 +18,7 @@ const exec = promisify(execCb);
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Set this to your public GitHub repo URL before publishing
-// e.g. "https://github.com/your-org/kstack-framework.git"
-const FRAMEWORK_REPO = process.env["KSTACK_REPO_URL"] ?? "";
+const FRAMEWORK_REPO = process.env["KSTACK_REPO_URL"] ?? "https://github.com/arnoxide/kstack-dev.git";
 const VERSION = "0.1.0";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
