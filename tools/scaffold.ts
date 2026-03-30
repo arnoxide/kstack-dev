@@ -1,11 +1,13 @@
 #!/usr/bin/env tsx
 /**
- * KStack module scaffold CLI
- * Usage: pnpm kstack module:create <Vendor_ModuleName> [options]
+ * KStack CLI
+ * Usage: pnpm kstack <command> [options]
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
+import * as readline from "node:readline/promises";
 
 const ROOT = join(fileURLToPath(import.meta.url), "..", "..");
 
@@ -57,6 +59,7 @@ function usage() {
     "KStack CLI",
     "",
     "Commands:",
+    "  store:create                        Create a new store (owner account + tenant)",
     "  module:create <Vendor_ModuleName>   Scaffold a new module",
     "  module:list                         List all registered modules",
     "  info                                Show framework info and license status",
@@ -70,11 +73,111 @@ function usage() {
     "  --dry-run              Preview changes without writing files",
     "",
     "Examples:",
+    "  pnpm kstack store:create",
     "  pnpm kstack module:create KStack_Loyalty",
     "  pnpm kstack module:create KStack_Blog --description 'Blog posts and articles'",
     "  pnpm kstack module:create KStack_Referrals --dry-run",
     "  pnpm kstack module:list",
     "  pnpm kstack info",
+    "",
+  ].join("\n"));
+}
+
+// ─── store:create ─────────────────────────────────────────────────────────────
+
+async function cmdStoreCreate() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  const ask = async (prompt: string, hidden = false): Promise<string> => {
+    if (hidden) {
+      // Disable echo for passwords
+      process.stdout.write(prompt);
+      return new Promise((resolve) => {
+        const stdin = process.stdin;
+        stdin.setRawMode?.(true);
+        stdin.resume();
+        stdin.setEncoding("utf-8");
+        let input = "";
+        stdin.on("data", function onData(ch: string) {
+          if (ch === "\r" || ch === "\n") {
+            stdin.setRawMode?.(false);
+            stdin.pause();
+            stdin.removeListener("data", onData);
+            process.stdout.write("\n");
+            resolve(input);
+          } else if (ch === "\u0003") {
+            process.exit(1);
+          } else if (ch === "\u007f") {
+            if (input.length > 0) {
+              input = input.slice(0, -1);
+              process.stdout.write("\b \b");
+            }
+          } else {
+            input += ch;
+            process.stdout.write("*");
+          }
+        });
+      });
+    }
+    const answer = await rl.question(prompt);
+    return answer.trim();
+  };
+
+  console.log("\n  KStack — Create a new store\n");
+
+  const name     = await ask("  Owner name    : ");
+  const email    = await ask("  Owner email   : ");
+  const password = await ask("  Password      : ", true);
+  const shopName = await ask("  Shop name     : ");
+
+  // Suggest a slug from shop name
+  const suggested = shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const shopSlug  = (await ask(`  Shop URL slug [${suggested}]: `)) || suggested;
+
+  rl.close();
+
+  const apiPort = process.env["API_PORT"] ?? "3001";
+  const apiUrl  = `http://localhost:${apiPort}/trpc/auth.register`;
+
+  console.log("\n  Creating store...");
+
+  let res: Response;
+  try {
+    res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        json: { name, email, password, shopName, shopSlug },
+      }),
+    });
+  } catch {
+    console.error("\n  Error: Could not reach the KStack API.");
+    console.error(`  Make sure the API is running on port ${apiPort}:`);
+    console.error("    pnpm dev  (in kstack-framework root)\n");
+    process.exit(1);
+  }
+
+  const body = await res.json() as { result?: { data?: { json?: unknown } }; error?: { message?: string; json?: { message?: string } } };
+
+  if (!res.ok || body.error) {
+    const msg = body.error?.json?.message ?? body.error?.message ?? `HTTP ${res.status}`;
+    console.error(`\n  Error: ${msg}\n`);
+    process.exit(1);
+  }
+
+  const rootDomain = process.env["ROOT_DOMAIN"] ?? "localhost:3000";
+  const dashUrl    = `http://${shopSlug}.${rootDomain}`;
+
+  console.log([
+    "",
+    "  Store created successfully!",
+    "",
+    `  Shop name : ${shopName}`,
+    `  Shop slug : ${shopSlug}`,
+    `  Email     : ${email}`,
+    `  Dashboard : ${dashUrl}`,
+    "",
+    "  Log in with the email and password you just set.",
     "",
   ].join("\n"));
 }
@@ -154,6 +257,11 @@ if (!rawArgs.length || rawArgs[0] === "--help" || rawArgs[0] === "-h") {
 }
 
 // ─── Command dispatch ────────────────────────────────────────────────────────
+
+if (rawArgs[0] === "store:create") {
+  await cmdStoreCreate();
+  process.exit(0);
+}
 
 if (rawArgs[0] === "module:list") {
   cmdModuleList();
