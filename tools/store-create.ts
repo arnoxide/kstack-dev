@@ -23,7 +23,6 @@ async function ask(prompt: string, hidden = false): Promise<string> {
       stdin.on("data", function onData(ch: string) {
         if (ch === "\r" || ch === "\n") {
           stdin.setRawMode?.(false);
-          stdin.pause();
           stdin.removeListener("data", onData);
           process.stdout.write("\n");
           resolve(input);
@@ -66,7 +65,8 @@ async function main() {
 
   const shopName  = await ask("  Shop name     : ");
   const suggested = shopName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const shopSlug  = (await ask(`  Shop URL slug [${suggested}]: `)) || suggested;
+  const rawSlug   = await ask(`  Shop URL slug [${suggested}]: `);
+  const shopSlug  = rawSlug.trim() || suggested;
 
   rl.close();
 
@@ -87,8 +87,13 @@ async function main() {
 
   const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existingUser) {
-    console.error("\n  Error: An account with that email already exists.\n");
-    process.exit(1);
+    // Check if this is an orphaned user (no tenant) — allow recovery
+    const [existingMu] = await db.select().from(merchantUsers).where(eq(merchantUsers.userId, existingUser.id)).limit(1);
+    if (existingMu) {
+      console.error("\n  Error: An account with that email already exists and has a store.\n  Log in at http://localhost:3002/login\n");
+      process.exit(1);
+    }
+    console.log("  Note: account exists with no store — creating store for existing account...");
   }
 
   const [existingTenant] = await db.select().from(tenants).where(eq(tenants.slug, shopSlug)).limit(1);
@@ -97,36 +102,58 @@ async function main() {
     process.exit(1);
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-
   const result = await db.transaction(async (tx) => {
-    const [newUser] = await tx
-      .insert(users)
-      .values({ email, name, passwordHash })
-      .returning();
-    if (!newUser) throw new Error("Failed to create user");
+    let userId: string;
+    let userEmail: string;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      userEmail = existingUser.email;
+    } else {
+      const passwordHash = await bcrypt.hash(password, 12);
+      const [newUser] = await tx
+        .insert(users)
+        .values({ email, name, passwordHash })
+        .returning();
+      if (!newUser) throw new Error("Failed to create user");
+      userId = newUser.id;
+      userEmail = newUser.email;
+    }
 
     const [newTenant] = await tx
       .insert(tenants)
-      .values({ slug: shopSlug, name: shopName, email })
+      .values({ slug: shopSlug, name: shopName, email: userEmail })
       .returning();
     if (!newTenant) throw new Error("Failed to create tenant");
 
-    await tx.insert(merchantUsers).values({ userId: newUser.id, tenantId: newTenant.id, role: "owner" });
+    await tx.insert(merchantUsers).values({ userId, tenantId: newTenant.id, role: "owner" });
 
-    return { user: newUser, tenant: newTenant };
+    return { userId, userEmail, tenant: newTenant };
   });
 
-  const rootDomain = process.env["ROOT_DOMAIN"] ?? "localhost:3000";
+  const rootDomain = process.env["ROOT_DOMAIN"];
+  const slug       = result.tenant.slug;
+
+  const isLocalDev = !rootDomain || rootDomain.startsWith("localhost");
+
+  const dashUrl       = isLocalDev
+    ? `http://localhost:3002/${slug}`
+    : `https://dashboard.${rootDomain}/${slug}`;
+  const storefrontUrl = isLocalDev
+    ? `http://localhost:3003/${slug}`
+    : `https://${slug}.${rootDomain}`;
 
   console.log([
     "",
     "  Store created successfully!",
     "",
-    `  Shop name : ${result.tenant.name}`,
-    `  Shop slug : ${result.tenant.slug}`,
-    `  Email     : ${result.user.email}`,
-    `  Dashboard : http://${result.tenant.slug}.${rootDomain}`,
+    `  Shop name  : ${result.tenant.name}`,
+    `  Shop slug  : ${slug}`,
+    `  Email      : ${result.userEmail}`,
+    "",
+    "  Open these in your browser:",
+    `  Dashboard  : ${dashUrl}`,
+    `  Storefront : ${storefrontUrl}`,
     "",
     "  Log in with the email and password you just set.",
     "",
