@@ -416,7 +416,8 @@ async function main() {
 
   console.log();
   console.log("  Once running:");
-  console.log(`  Dashboard  →  ${pc.cyan("http://localhost:3002/register")}   (create your first store)`);
+  console.log(`  ${pc.cyan(`${pm} run kstack store:create`)}   # create your first store`);
+  console.log(`  Dashboard  →  ${pc.cyan("http://localhost:3002/login")}   (after store:create)`);
   console.log(`  API        →  ${pc.cyan("http://localhost:3001/health")}`);
   console.log(`  ${storefrontNote}`);
   console.log();
